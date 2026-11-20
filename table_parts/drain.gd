@@ -2,6 +2,9 @@
 class_name Drain
 extends Area3D
 ## Detects balls that leave play (below the flippers).
+##
+## A drained ball can bounce around inside the drain area and re-enter it,
+## so each ball is reported once until it is re-armed (served again).
 
 signal ball_drained(ball: Ball)
 
@@ -11,6 +14,7 @@ signal ball_drained(ball: Ball)
 		_rebuild()
 
 var _shape_node: CollisionShape3D
+var _drained_balls := {}
 
 
 func _ready() -> void:
@@ -23,8 +27,14 @@ func _ready() -> void:
 
 
 func _on_body_entered(body: Node3D) -> void:
-	if body is Ball:
+	if body is Ball and not _drained_balls.has(body):
+		_drained_balls[body] = true
 		ball_drained.emit(body)
+
+
+## Allows a ball to drain again, e.g. after it was served back into play.
+func rearm(ball: Ball) -> void:
+	_drained_balls.erase(ball)
 
 
 func _rebuild() -> void:

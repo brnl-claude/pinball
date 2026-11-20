@@ -28,6 +28,7 @@ func _physics_process(_delta: float) -> void:
 func serve_ball() -> void:
 	var radius := ball.tuning.scaled_ball_radius() if ball.tuning else 0.0135
 	ball.reset_to(Transform3D(Basis.IDENTITY, plunger.ball_rest_position(radius)))
+	drain.rearm(ball)
 
 
 func _on_ball_drained(_drained: Ball) -> void:
