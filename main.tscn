@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://cameras/camera_rig.gd" id="1_cam"]
 [ext_resource type="Script" path="res://ui/debug_overlay.gd" id="2_dbg"]
-[ext_resource type="PackedScene" path="res://tables/sandbox/sandbox.tscn" id="3_table"]
+[ext_resource type="PackedScene" path="res://tables/proto_table/proto_table.tscn" id="3_table"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat_1"]
 sky_top_color = Color(0.08, 0.09, 0.12, 1)

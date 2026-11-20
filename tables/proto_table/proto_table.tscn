@@ -1,0 +1,138 @@
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://tables/proto_table/proto_table_controller.gd" id="1_ctrl"]
+[ext_resource type="Script" path="res://table_parts/wall.gd" id="2_wall"]
+[ext_resource type="Script" path="res://table_parts/ball.gd" id="3_ball"]
+[ext_resource type="Resource" path="res://physics/default_tuning.tres" id="4_tuning"]
+[ext_resource type="Script" path="res://table_parts/flipper.gd" id="5_flipper"]
+[ext_resource type="Script" path="res://table_parts/plunger.gd" id="6_plunger"]
+[ext_resource type="Script" path="res://table_parts/drain.gd" id="7_drain"]
+
+[node name="ProtoTable" type="Node3D"]
+script = ExtResource("1_ctrl")
+
+[node name="Playfield" type="StaticBody3D" parent="."]
+position = Vector3(0, -0.01, 0)
+script = ExtResource("2_wall")
+size = Vector3(0.51, 0.02, 1.07)
+color = Color(0.08, 0.12, 0.3, 1)
+bounce = 0.0
+
+[node name="WallLeft" type="StaticBody3D" parent="."]
+position = Vector3(-0.265, 0.03, 0)
+script = ExtResource("2_wall")
+size = Vector3(0.02, 0.06, 1.11)
+color = Color(0.35, 0.22, 0.12, 1)
+
+[node name="WallRight" type="StaticBody3D" parent="."]
+position = Vector3(0.265, 0.03, 0)
+script = ExtResource("2_wall")
+size = Vector3(0.02, 0.06, 1.11)
+color = Color(0.35, 0.22, 0.12, 1)
+
+[node name="WallTop" type="StaticBody3D" parent="."]
+position = Vector3(0, 0.03, -0.545)
+script = ExtResource("2_wall")
+size = Vector3(0.55, 0.06, 0.02)
+color = Color(0.35, 0.22, 0.12, 1)
+
+[node name="WallBottom" type="StaticBody3D" parent="."]
+position = Vector3(0, 0.03, 0.545)
+script = ExtResource("2_wall")
+size = Vector3(0.55, 0.06, 0.02)
+color = Color(0.35, 0.22, 0.12, 1)
+
+[node name="Glass" type="StaticBody3D" parent="."]
+position = Vector3(0, 0.0625, 0)
+script = ExtResource("2_wall")
+size = Vector3(0.55, 0.005, 1.11)
+show_mesh = false
+bounce = 0.2
+
+[node name="ShooterLaneWall" type="StaticBody3D" parent="."]
+position = Vector3(0.205, 0.03, 0.1175)
+script = ExtResource("2_wall")
+size = Vector3(0.01, 0.06, 0.835)
+color = Color(0.35, 0.22, 0.12, 1)
+
+[node name="TopRightArc" type="StaticBody3D" parent="."]
+position = Vector3(0.1925, 0.03, -0.4825)
+rotation = Vector3(0, -0.698, 0)
+script = ExtResource("2_wall")
+size = Vector3(0.165, 0.06, 0.01)
+color = Color(0.8, 0.8, 0.82, 1)
+
+[node name="TopLeftArc" type="StaticBody3D" parent="."]
+position = Vector3(-0.1925, 0.03, -0.4825)
+rotation = Vector3(0, 0.698, 0)
+script = ExtResource("2_wall")
+size = Vector3(0.165, 0.06, 0.01)
+color = Color(0.8, 0.8, 0.82, 1)
+
+[node name="LeftLaneDivider" type="StaticBody3D" parent="."]
+position = Vector3(-0.22, 0.02, 0.25)
+script = ExtResource("2_wall")
+size = Vector3(0.005, 0.04, 0.14)
+color = Color(0.8, 0.8, 0.82, 1)
+
+[node name="RightLaneDivider" type="StaticBody3D" parent="."]
+position = Vector3(0.165, 0.02, 0.25)
+script = ExtResource("2_wall")
+size = Vector3(0.005, 0.04, 0.14)
+color = Color(0.8, 0.8, 0.82, 1)
+
+[node name="LeftInlaneGuide" type="StaticBody3D" parent="."]
+position = Vector3(-0.1775, 0.02, 0.3525)
+rotation = Vector3(0, -0.653, 0)
+script = ExtResource("2_wall")
+size = Vector3(0.107, 0.04, 0.005)
+color = Color(0.8, 0.8, 0.82, 1)
+
+[node name="RightInlaneGuide" type="StaticBody3D" parent="."]
+position = Vector3(0.1225, 0.02, 0.3525)
+rotation = Vector3(0, 0.653, 0)
+script = ExtResource("2_wall")
+size = Vector3(0.107, 0.04, 0.005)
+color = Color(0.8, 0.8, 0.82, 1)
+
+[node name="PostLeft" type="StaticBody3D" parent="."]
+position = Vector3(-0.1, 0.02, -0.15)
+script = ExtResource("2_wall")
+size = Vector3(0.02, 0.04, 0.02)
+color = Color(0.9, 0.3, 0.2, 1)
+
+[node name="PostRight" type="StaticBody3D" parent="."]
+position = Vector3(0.05, 0.02, -0.15)
+script = ExtResource("2_wall")
+size = Vector3(0.02, 0.04, 0.02)
+color = Color(0.9, 0.3, 0.2, 1)
+
+[node name="PostTop" type="StaticBody3D" parent="."]
+position = Vector3(-0.0275, 0.02, -0.3)
+script = ExtResource("2_wall")
+size = Vector3(0.02, 0.04, 0.02)
+color = Color(0.9, 0.3, 0.2, 1)
+
+[node name="LeftFlipper" type="AnimatableBody3D" parent="."]
+position = Vector3(-0.1225, 0, 0.4)
+script = ExtResource("5_flipper")
+input_action = &"flipper_left"
+
+[node name="RightFlipper" type="AnimatableBody3D" parent="."]
+position = Vector3(0.0675, 0, 0.4)
+script = ExtResource("5_flipper")
+side = 1
+input_action = &"flipper_right"
+
+[node name="Plunger" type="AnimatableBody3D" parent="."]
+position = Vector3(0.2325, 0.01, 0.51)
+script = ExtResource("6_plunger")
+
+[node name="Drain" type="Area3D" parent="."]
+position = Vector3(-0.0275, 0.025, 0.5)
+script = ExtResource("7_drain")
+size = Vector3(0.455, 0.05, 0.06)
+
+[node name="Ball" type="RigidBody3D" parent="."]
+script = ExtResource("3_ball")
+tuning = ExtResource("4_tuning")
