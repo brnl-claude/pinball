@@ -34,6 +34,8 @@ const ACTIONS := {
 	"toggle_debug": [{"key": KEY_F3}],
 	"rotate_screen": [{"key": KEY_F8}],
 	"render_scale_next": [{"key": KEY_F7}],
+	"save_replay": [{"key": KEY_F9}],
+	"play_replay": [{"key": KEY_F10}],
 }
 
 

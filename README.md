@@ -29,6 +29,7 @@ godot --path . --headless --fixed-fps 1000 --script res://tests/rules_test.gd   
 | Switch camera profile (auto, portrait, landscape, ultrawide, top-down) | C | – |
 | Rotate screen 0/90/180/270° (monitor turned upright in a cabinet) | F8 | – |
 | Render scale: native, or FSR 2 at 77/67/59/50% | F7 | – |
+| Save the last 30 s as a replay / play the newest replay back | F9 / F10 | – |
 | Re-serve ball | Backspace | – |
 | Debug overlay | F3 | – |
 
@@ -52,6 +53,10 @@ The camera picks a layout profile from the aspect ratio:
 | Top-down | manual (C) | straight down | bar at the top |
 
 F8 rotates the whole picture for a landscape monitor turned upright, without telling the OS: use 90° when the monitor's top edge points left and 270° when it points right. The setting is saved in `user://settings.cfg`, and the profile is then picked from the rotated aspect ratio. Presets are `CameraPreset` resources, so a table can bring its own.
+
+## Replays (debugging)
+
+The table records every physics tick into a 30-second ring buffer: ball position, rotation and velocities, both flippers, the plunger, the coil inputs and the cabinet's nudge offset. F9 saves it to `user://replays/` (on Linux `~/.local/share/godot/app_userdata/Pinball/replays/`), and F10 plays the newest file back so a physics bug can be watched again with F3 open. Playback drives the ball and parts straight from the recording.
 
 ## Graphics
 

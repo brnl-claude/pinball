@@ -263,6 +263,12 @@ func _update_restitution() -> void:
 		_physics_material.bounce = target
 
 
+## Puts the bat at a stroke angle directly (replay playback).
+func set_stroke(angle: float) -> void:
+	stroke_angle = clampf(angle, 0.0, deg_to_rad(stroke_degrees))
+	_apply_angle()
+
+
 func is_fully_up() -> bool:
 	return stroke_angle >= deg_to_rad(stroke_degrees) * 0.99
 

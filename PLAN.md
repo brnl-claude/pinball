@@ -2,7 +2,7 @@
 
 Goal: a 3D pinball game in the style of Pinball FX / Zaccaria Pinball, with believable physics (flippers, slingshots, bumpers, nudge/tilt), built on an open source engine. This document picks the engine, explains where pinball physics gets hard, describes the controls, and lays out a phased roadmap to a first playable prototype.
 
-> Status: approved. Phases 0–4 are done (Phase 4 is the first playable prototype); Phase 5 (feel and presentation) is in progress.
+> Status: approved. Phases 0–5 are done: the first playable prototype (Phase 4) with nudge/tilt, refined flippers, layout profiles, a graphics pass and replays (Phase 5). Baked lightmaps wait until the table geometry is final. Next: Phase 6.
 
 **Priorities:** (1) realistic physics, (2) realistic graphics, (3) runs smoothly on Linux.
 
