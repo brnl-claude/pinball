@@ -1,6 +1,6 @@
 extends CanvasLayer
-## In-game HUD: score, ball number, bonus multiplier and messages from the
-## rules. Built with anchors and containers, and sized relative to the
+## In-game HUD: the dot-matrix display (score, ball, status and messages
+## from the rules) and the high score table in attract mode. Built with anchors and containers, and sized relative to the
 ## viewport height, so it works from 9:16 portrait to 32:9.
 ##
 ## The camera's layout profile decides where the score goes: a bar at the
@@ -8,6 +8,10 @@ extends CanvasLayer
 ## sides (ultrawide). With in-game screen rotation the whole HUD turns along.
 
 @export var rules_path: NodePath
+## Largest DMD width as a fraction of the view height, and as a fraction
+## of the width of its panel.
+@export var dmd_height_share := 0.5
+@export var dmd_panel_share := 0.92
 ## Text sizes as a fraction of the viewport height.
 @export var score_size := 0.055
 @export var info_size := 0.026
@@ -26,6 +30,7 @@ var _root: Control
 var _left_box: VBoxContainer
 var _right_box: VBoxContainer
 
+var dmd: Dmd
 var _score_label: Label
 var _info_label: Label
 var _message_label: Label
@@ -47,6 +52,7 @@ func _ready() -> void:
 			layout = preset.hud_layout
 	_apply_layout()
 	rules = get_node_or_null(rules_path)
+	dmd.rules = rules
 	if rules:
 		rules.message.connect(show_message)
 		rules.game_over.connect(func(_score: int, _rank: int): _refresh_high_scores())
@@ -89,8 +95,7 @@ func _on_preset_changed(preset: CameraPreset) -> void:
 
 
 func show_message(text: String) -> void:
-	_message_label.text = text
-	_message_time_left = message_seconds
+	dmd.show_message(text)
 
 
 func _refresh_high_scores() -> void:
@@ -120,12 +125,21 @@ func _build() -> void:
 
 	_left_box = _make_box()
 	_right_box = _make_box()
+	dmd = Dmd.new()
+	dmd.name = "Dmd"
+	dmd.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_left_box.add_child(dmd)
+	# The DMD shows score, ball and messages; the labels stay for tests and
+	# debugging but are hidden.
 	_score_label = _make_label(HORIZONTAL_ALIGNMENT_CENTER)
+	_score_label.visible = false
 	_left_box.add_child(_score_label)
 	_info_label = _make_label(HORIZONTAL_ALIGNMENT_CENTER)
+	_info_label.visible = false
 	_left_box.add_child(_info_label)
 
 	_message_label = _make_label(HORIZONTAL_ALIGNMENT_CENTER)
+	_message_label.visible = false
 	_message_label.set_anchors_preset(Control.PRESET_CENTER)
 	_message_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_message_label.grow_vertical = Control.GROW_DIRECTION_BOTH
@@ -191,9 +205,9 @@ func _move_label(label: Label, box: Control) -> void:
 		label.reparent(box, false)
 
 
-## Where the score label sits, in logical coordinates (for tests).
+## Where the score (the DMD) sits, in logical coordinates (for tests).
 func score_rect() -> Rect2:
-	return _score_label.get_global_rect()
+	return dmd.get_global_rect()
 
 
 func _make_label(align: HorizontalAlignment) -> Label:
@@ -211,6 +225,10 @@ func _apply_sizes() -> void:
 	_set_size(_info_label, height * info_size)
 	_set_size(_message_label, height * message_size)
 	_set_size(_high_score_label, height * info_size)
+	if dmd:
+		var panel := _left_box.size.x if _left_box.size.x > 0.0 else _root.size.x
+		var width := minf(panel * dmd_panel_share, height * dmd_height_share)
+		dmd.custom_minimum_size = Vector2(width, width * Dmd.ROWS / Dmd.COLUMNS)
 
 
 func _set_size(label: Label, pixels: float) -> void:
