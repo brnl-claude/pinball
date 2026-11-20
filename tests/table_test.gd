@@ -38,6 +38,11 @@ func _run() -> void:
 	await _test_nudge_cradled_ball()
 	await _test_tilt()
 	await _test_replay()
+	await _test_ramp(1.0, false)
+	await _test_ramp(2.2, true)
+	await _test_ramp(3.0, true)
+	await _test_ramp(4.0, true)
+	await _test_ball_passes_under_ramp()
 
 	print("")
 	if _failures.is_empty():
@@ -455,3 +460,82 @@ func _test_replay() -> void:
 		_failures.append("the replay did not record the flipper coil")
 	if error > 0.0005 or replay.is_playing or _ball.freeze:
 		_failures.append("playback does not reproduce the recording (%.2f mm off)" % (error * 1000.0))
+
+
+## Rolls the ball straight into the left ramp. A strong enough shot goes up,
+## around the hairpin, down the wire return and onto the playfield in the
+## left inlane; a weak one rolls back out of the entrance.
+func _test_ramp(speed: float, should_make: bool) -> void:
+	await _load_table()
+	var ramp: Ramp = _table.get_node("LeftRamp")
+	var made_switch: BallSwitch = _table.get_node("LeftRampMade")
+	var radius := _ball.tuning.scaled_ball_radius()
+	var entrance := ramp.points[0]
+	_place_ball(Vector3(entrance.x, radius, entrance.z + 0.05))
+	_ball.linear_velocity = Vector3(0.0, 0.0, -speed)
+	_ball.angular_velocity = Vector3(-speed / radius, 0.0, 0.0)
+	var top := 0.0
+	var landed := Vector3.INF
+	var made_tick := -1
+	for i in 4000:
+		await physics_frame
+		top = maxf(top, _ball.position.y)
+		if made_tick < 0 and made_switch.hits > 0:
+			made_tick = i
+		if made_tick >= 0 and _ball.position.z > 0.1 and _ball.position.y < radius + 0.001:
+			landed = _ball.position
+			break
+		if made_tick < 0 and not should_make and i > 1500:
+			break
+	# Touching the glass on a hard shot is fine; passing through it is not.
+	var glass_clearance := 0.095 + 0.001 - (top + radius)
+	print("Ramp at %.1f m/s: made %s (switch %d) after %.2f s, highest ball top %.3f m, landed at %s, score %d" % [
+			speed, made_tick >= 0, made_switch.hits, made_tick / 1000.0, top + radius, landed, _table.get("score")])
+	if should_make:
+		if made_tick < 0:
+			_failures.append("ramp shot at %.1f m/s did not make the ramp" % speed)
+		elif landed == Vector3.INF:
+			_failures.append("ramp shot at %.1f m/s did not come back onto the playfield" % speed)
+		elif landed.x < -0.225 or landed.x > -0.175 or landed.z > 0.3:
+			_failures.append("ramp shot at %.1f m/s landed outside the left inlane (%s)" % [speed, landed])
+		if made_switch.hits != 1 or _table.get("score") < 1000:
+			_failures.append("ramp switch did not score exactly once (%d hits)" % made_switch.hits)
+	else:
+		if made_tick >= 0:
+			_failures.append("a weak ramp shot (%.1f m/s) made the ramp" % speed)
+		if _ball.position.z < entrance.z or _ball.position.y > radius + 0.002:
+			_failures.append("a weak ramp shot did not roll back out (%s)" % _ball.position)
+	if glass_clearance < 0.0:
+		_failures.append("the ball went through the glass on the ramp (%.3f m)" % glass_clearance)
+
+
+## The lane along the left wall runs under the wire return. A ball rolling
+## up it passes under the wires, stops against the closed end of the ramp
+## and rolls back down; it never gets wedged.
+func _test_ball_passes_under_ramp() -> void:
+	await _load_table()
+	var radius := _ball.tuning.scaled_ball_radius()
+	_place_ball(Vector3(-0.232, radius, 0.0))
+	_ball.linear_velocity = Vector3(0.0, 0.0, -1.6)
+	_ball.angular_velocity = Vector3(1.6 / radius, 0.0, 0.0)
+	var highest_z := 0.0
+	var top := 0.0
+	var lowest := radius
+	var lowest_at := Vector3.ZERO
+	for i in 1500:
+		await physics_frame
+		highest_z = minf(highest_z, _ball.position.z)
+		top = maxf(top, _ball.position.y)
+		if _ball.position.y < lowest:
+			lowest = _ball.position.y
+			lowest_at = _ball.position
+	print("Under the wire ramp: got up to z %.3f, centre between %.4f (at %s) and %.4f m, ended at %s, speed %.2f m/s" % [
+			highest_z, lowest, lowest_at, top, _ball.position, _ball.speed()])
+	# A wedged ball is pressed into the playfield and stops; a hard landing
+	# only dips briefly.
+	if lowest < radius - 0.003 or (_ball.speed() < 0.02 and _ball.position.y < radius - 0.0005):
+		_failures.append("ball got wedged under the wire ramp (centre at %.4f m)" % lowest)
+	if top > radius + 0.004:
+		_failures.append("ball under the wire ramp bounced up (%.4f m)" % top)
+	if _ball.position.z < highest_z + 0.1:
+		_failures.append("ball under the wire ramp did not roll back down (%s)" % _ball.position)

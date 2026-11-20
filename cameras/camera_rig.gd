@@ -17,8 +17,8 @@ extends Camera3D
 signal preset_changed(preset: CameraPreset)
 
 ## Size of the table's bounding box in meters (width, height, length).
-@export var table_size := Vector3(0.55, 0.07, 1.11)
-@export var table_center := Vector3(0.0, 0.03, 0.0)
+@export var table_size := Vector3(0.55, 0.1, 1.11)
+@export var table_center := Vector3(0.0, 0.045, 0.0)
 ## Layout profiles; empty means `CameraPreset.defaults()`.
 @export var presets: Array[CameraPreset] = []
 ## How much of the cabinet's nudge motion shows on screen (1 = real).

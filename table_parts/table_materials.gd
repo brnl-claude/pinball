@@ -16,6 +16,8 @@ enum Finish {
 	RUBBER,
 	## Translucent plastic (inserts, caps).
 	PLASTIC,
+	## Clear, see-through plastic (ramps); the colour's alpha sets how clear.
+	CLEAR_PLASTIC,
 }
 
 static var _wood_texture: NoiseTexture2D
@@ -50,6 +52,15 @@ static func make(finish: Finish, color: Color) -> StandardMaterial3D:
 			material.clearcoat = 0.6
 			material.rim_enabled = true
 			material.rim = 0.25
+		Finish.CLEAR_PLASTIC:
+			material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			material.roughness = 0.08
+			material.metallic_specular = 0.7
+			material.clearcoat_enabled = true
+			material.clearcoat = 1.0
+			material.clearcoat_roughness = 0.02
+			material.rim_enabled = true
+			material.rim = 0.4
 		_:
 			material.roughness = 0.55
 	return material
