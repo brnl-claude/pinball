@@ -53,6 +53,15 @@ func set_pull(value: float) -> void:
 	position = _rest_position + Vector3(0.0, 0.0, pull)
 
 
+## Auto-plunge: the rod snaps back by `strength` × `max_pull` and is
+## released at once, as if the player pulled and let go.
+func fire(strength := 1.0) -> void:
+	pull = max_pull * clampf(strength, 0.0, 1.0)
+	release_speed = 0.0
+	pulled = false
+	position = _rest_position + Vector3(0.0, 0.0, pull)
+
+
 func step(delta: float) -> void:
 	if not enabled:
 		pulled = false
