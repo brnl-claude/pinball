@@ -1,10 +1,11 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://cameras/camera_rig.gd" id="1_cam"]
 [ext_resource type="Script" path="res://ui/debug_overlay.gd" id="2_dbg"]
 [ext_resource type="PackedScene" path="res://tables/proto_table/proto_table.tscn" id="3_table"]
 [ext_resource type="Script" path="res://rules/game_rules.gd" id="4_rules"]
 [ext_resource type="Script" path="res://ui/hud.gd" id="5_hud"]
+[ext_resource type="Script" path="res://ui/settings_menu.gd" id="6_menu"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat_1"]
 sky_top_color = Color(0.08, 0.09, 0.12, 1)
@@ -65,6 +66,9 @@ table_path = NodePath("../Table")
 [node name="Hud" type="CanvasLayer" parent="."]
 script = ExtResource("5_hud")
 rules_path = NodePath("../GameRules")
+
+[node name="SettingsMenu" type="CanvasLayer" parent="."]
+script = ExtResource("6_menu")
 
 [node name="DebugOverlay" type="CanvasLayer" parent="."]
 layer = 2

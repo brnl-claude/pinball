@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3]
+[gd_scene load_steps=22 format=3]
 
 [ext_resource type="Script" path="res://tables/proto_table/proto_table_controller.gd" id="1_ctrl"]
 [ext_resource type="Script" path="res://table_parts/wall.gd" id="2_wall"]
@@ -19,6 +19,7 @@
 [ext_resource type="Script" path="res://table_parts/ball_switch.gd" id="17_switch"]
 [ext_resource type="Script" path="res://table_parts/saucer.gd" id="18_saucer"]
 [ext_resource type="Script" path="res://table_parts/spinner.gd" id="19_spinner"]
+[ext_resource type="Script" path="res://table_parts/magnet.gd" id="20_magnet"]
 
 [node name="ProtoTable" type="Node3D"]
 script = ExtResource("1_ctrl")
@@ -301,6 +302,11 @@ script = ExtResource("14_rollover")
 [node name="RightOutlaneRollover" type="Area3D" parent="."]
 position = Vector3(0.1825, 0, 0.24)
 script = ExtResource("14_rollover")
+
+[node name="MagnaSave" type="Node3D" parent="."]
+position = Vector3(-0.2375, 0, 0.29)
+script = ExtResource("20_magnet")
+release_velocity = Vector3(0.15, 0, -0.6)
 
 [node name="LeftRamp" type="StaticBody3D" parent="."]
 script = ExtResource("15_ramp")
