@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  GODOT_VERSION: "4.7.2"
+
+jobs:
+  linux:
+    name: Smoke test and Linux export
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/godot
+            ~/.local/share/godot/export_templates
+          key: godot-${{ env.GODOT_VERSION }}
+
+      - name: Download Godot and export templates
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          base="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable"
+          mkdir -p ~/godot
+          curl -fsSL -o /tmp/godot.zip "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q /tmp/godot.zip -d ~/godot
+          mv ~/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64 ~/godot/godot
+          curl -fsSL -o /tmp/templates.tpz "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          dest=~/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          mkdir -p "$dest"
+          unzip -q /tmp/templates.tpz -d /tmp/tpl
+          mv /tmp/tpl/templates/* "$dest"/
+
+      - name: Import project
+        run: ~/godot/godot --headless --import 2>&1 | tee import.log
+
+      - name: Smoke test
+        run: |
+          set -o pipefail
+          ~/godot/godot --headless --script res://tests/smoke_test.gd 2>&1 | tee smoke.log
+          if grep -qE "SCRIPT ERROR|Parse Error|Failed to load script" import.log smoke.log; then
+            echo "::error::Script errors found in the logs"
+            exit 1
+          fi
+
+      - name: Linux export
+        run: |
+          set -o pipefail
+          mkdir -p build/linux
+          ~/godot/godot --headless --export-release "Linux" build/linux/pinball.x86_64 2>&1 | tee export.log
+          test -x build/linux/pinball.x86_64
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pinball-linux
+          path: build/linux/
+          retention-days: 14
