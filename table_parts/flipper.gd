@@ -215,8 +215,9 @@ func _apply_ball_impulses(delta: float) -> void:
 		_last_ball_velocity[id] = velocity
 		if last == null or stroke_angle <= 0.0:
 			continue
+		# The ball may already have moved away during the step that bounced it.
 		var contact := _contact_with(ball)
-		if float(contact["gap"]) > recoil_contact_distance:
+		if float(contact["gap"]) - velocity.length() * delta > recoil_contact_distance:
 			continue
 		# Velocity change from contacts only (gravity and nudges removed).
 		var change: Vector3 = velocity - last - ball.constant_force / ball.mass * delta
