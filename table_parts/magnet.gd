@@ -4,7 +4,7 @@ extends Node3D
 ## A playfield magnet under an insert. While active it pulls balls within
 ## `radius` to its centre and holds them there (a spring with damping, so a
 ## fast ball is caught instead of swinging through). When it switches off it
-## lets go with `release_velocity`, given in the magnet's local frame.
+## lets go with `release_velocity` (in the magnet's local frame), rolling.
 ##
 ## Used as a magna-save in the left outlane: the player catches the ball and
 ## it is thrown back up the lane, with a chance to come down the inlane.
@@ -18,7 +18,7 @@ signal released
 @export var stiffness := 1500.0
 @export var damping := 70.0
 @export var max_hold_seconds := 1.5
-@export var release_velocity := Vector3(0.25, 0.0, -0.9)
+@export var release_velocity := Vector3(0.12, 0.0, -0.55)
 @export var lamp_color := Color(0.3, 0.6, 1.0)
 
 var active := false
@@ -48,8 +48,10 @@ func release() -> void:
 	LampFx.set_lit(_insert_material, lamp_color, false)
 	var throw := global_basis * release_velocity
 	for ball in _balls_in_reach(radius * 0.5):
+		# Already rolling, so it does not lose speed skidding.
+		var ball_radius := ball.tuning.scaled_ball_radius() if ball.tuning else 0.0135
 		ball.linear_velocity = throw
-		ball.angular_velocity = Vector3.ZERO
+		ball.angular_velocity = Vector3.UP.cross(throw) / ball_radius
 	released.emit()
 
 

@@ -306,7 +306,6 @@ script = ExtResource("14_rollover")
 [node name="MagnaSave" type="Node3D" parent="."]
 position = Vector3(-0.2375, 0, 0.29)
 script = ExtResource("20_magnet")
-release_velocity = Vector3(0.15, 0, -0.6)
 
 [node name="LeftRamp" type="StaticBody3D" parent="."]
 script = ExtResource("15_ramp")
