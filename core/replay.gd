@@ -4,7 +4,7 @@ extends Node
 ##
 ## Every physics tick the recorder stores the ball's state, both flippers,
 ## the plunger, the coil inputs and the cabinet's nudge offset in a ring
-## buffer of the last `seconds`. F9 saves it to user://replays/, F10 plays
+## buffer of the last `seconds`. K saves it to user://replays/, L plays
 ## the newest saved replay back by driving the ball and parts from the
 ## recording, so a bug can be watched again tick by tick (with F3 open).
 ##

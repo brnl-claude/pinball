@@ -5,7 +5,7 @@ extends Node3D
 ## `GameRules`; without rules attached the table simply re-serves the ball
 ## after a drain (sandbox play). Backspace re-serves the ball by hand.
 ## The table owns a `Cabinet` for nudging and the tilt bob, and a `Replay`
-## that records every physics tick (F9 saves, F10 plays back).
+## that records every physics tick (K saves, L plays back).
 
 signal ball_drained
 signal ball_launched

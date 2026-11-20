@@ -27,9 +27,9 @@ godot --path . --headless --fixed-fps 1000 --script res://tests/rules_test.gd   
 | Start game | 1 | Start |
 | Pause | Esc | Back |
 | Switch camera profile (auto, portrait, landscape, ultrawide, top-down) | C | – |
-| Rotate screen 0/90/180/270° (monitor turned upright in a cabinet) | F8 | – |
-| Render scale: native, or FSR 2 at 77/67/59/50% | F7 | – |
-| Save the last 30 s as a replay / play the newest replay back | F9 / F10 | – |
+| Rotate screen 0/90/180/270° (monitor turned upright in a cabinet) | R | – |
+| Render scale: native, or FSR 2 at 77/67/59/50% | V | – |
+| Save the last 30 s as a replay / play the newest replay back | K / L | – |
 | Re-serve ball | Backspace | – |
 | Debug overlay | F3 | – |
 
@@ -40,6 +40,8 @@ Press **1** to start a game: 3 balls, an 8-second ball save after each launch, a
 **Nudging and tilt:** Z, `/` and Space shove the cabinet from the left, from the right and from the front. The ball reacts to the cabinet's motion, and a cradled ball can be bumped off a flipper. A tilt bob swings with every shove: the first two times it touches its ring you get a DANGER warning, the third time the ball tilts. A tilted ball loses its flippers, coils, scoring, ball save and bonus; the next ball starts normally. Press F3 to see the bob's swing.
 
 The top 5 scores are saved in `user://high_scores.cfg`.
+
+Function keys F7–F12 are left alone on purpose: when the game runs from the Godot editor, the editor's debugger uses them (F8 stops the running game).
 
 ## Screen layouts
 
@@ -52,11 +54,11 @@ The camera picks a layout profile from the aspect ratio:
 | Ultrawide | 2.6:1 and wider (32:9) | tilted, 40° | score left, info right |
 | Top-down | manual (C) | straight down | bar at the top |
 
-F8 rotates the whole picture for a landscape monitor turned upright, without telling the OS: use 90° when the monitor's top edge points left and 270° when it points right. The setting is saved in `user://settings.cfg`, and the profile is then picked from the rotated aspect ratio. Presets are `CameraPreset` resources, so a table can bring its own.
+R rotates the whole picture for a landscape monitor turned upright, without telling the OS: use 90° when the monitor's top edge points left and 270° when it points right. The setting is saved in `user://settings.cfg`, and the profile is then picked from the rotated aspect ratio. Presets are `CameraPreset` resources, so a table can bring its own.
 
 ## Replays (debugging)
 
-The table records every physics tick into a 30-second ring buffer: ball position, rotation and velocities, both flippers, the plunger, the coil inputs and the cabinet's nudge offset. F9 saves it to `user://replays/` (on Linux `~/.local/share/godot/app_userdata/Pinball/replays/`), and F10 plays the newest file back so a physics bug can be watched again with F3 open. Playback drives the ball and parts straight from the recording.
+The table records every physics tick into a 30-second ring buffer: ball position, rotation and velocities, both flippers, the plunger, the coil inputs and the cabinet's nudge offset. K saves it to `user://replays/` (on Linux `~/.local/share/godot/app_userdata/Pinball/replays/`), and L plays the newest file back so a physics bug can be watched again with F3 open. Playback drives the ball and parts straight from the recording.
 
 ## Graphics
 
@@ -64,7 +66,7 @@ The table records every physics tick into a 30-second ring buffer: ball position
 - A chrome ball that mirrors a box-projected reflection probe over the table.
 - Lit inserts and flashing caps glow above the HDR threshold, so they bloom.
 - Warm and cool fill lights, SSAO, SSIL and SSR.
-- F7 lowers the render scale with AMD FSR 2 upscaling when 7680×2160 at 120 fps needs headroom. The setting is saved in `user://settings.cfg`.
+- V lowers the render scale with AMD FSR 2 upscaling when 7680×2160 at 120 fps needs headroom. The setting is saved in `user://settings.cfg`.
 - Baked lightmaps (LightmapGI) wait until the table geometry is final, because baking needs the editor and a GPU.
 
 ## Settings (Phase 0)

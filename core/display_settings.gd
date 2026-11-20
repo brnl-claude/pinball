@@ -3,11 +3,11 @@ extends Node
 ## for a landscape monitor turned upright in a cabinet without the OS
 ## knowing. The content is rotated clockwise by `screen_rotation` degrees:
 ## use 90 when the monitor's top edge points left, 270 when it points right.
-## F8 cycles through 0, 90, 180 and 270.
+## R cycles through 0, 90, 180 and 270.
 ##
 ## Render scale: the 3D view can render at a lower resolution and be
 ## upscaled with AMD FSR 2, which keeps 120 fps reachable at 7680×2160.
-## F7 cycles through the steps in RENDER_SCALES; 100% renders natively.
+## V cycles through the steps in RENDER_SCALES; 100% renders natively.
 
 signal changed
 
