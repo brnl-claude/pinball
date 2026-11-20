@@ -29,6 +29,7 @@ func _run() -> void:
 	await _test_pop_bumper()
 	await _test_drop_target_bank()
 	await _test_rollover()
+	await _test_shooter_lane_hits_nothing()
 
 	print("")
 	if _failures.is_empty():
@@ -241,3 +242,28 @@ func _test_rollover() -> void:
 	print("Rollover: lit %s, score %d" % [rollover.lit, _table.get("score")])
 	if not rollover.lit:
 		_failures.append("top lane rollover did not trigger")
+
+
+## Regression: the drop targets sit right behind the shooter lane wall, and
+## Jolt's speculative contacts (up to 2 cm) used to drop them while the ball
+## was still in the lane.
+func _test_shooter_lane_hits_nothing() -> void:
+	await _load_table()
+	var bank: DropTargetBank = _table.get_node("DropTargetBank")
+	_table.call("serve_ball")
+	await _ticks(100)
+	_plunger.pulled = true
+	await _ticks(int(ceil(_plunger.max_pull / _plunger.pull_speed * Engine.physics_ticks_per_second)))
+	_plunger.pulled = false
+	var dropped_in_lane := false
+	var score_in_lane := 0
+	for i in 2000:
+		await physics_frame
+		if _ball.position.x < 0.2:
+			break
+		dropped_in_lane = dropped_in_lane or bank.targets.any(func(t): return t.is_down)
+		score_in_lane = _table.get("score")
+	print("Shooter lane: drop target hit while in the lane: %s, score in the lane: %d" % [
+			dropped_in_lane, score_in_lane])
+	if dropped_in_lane or score_in_lane > 0:
+		_failures.append("parts behind the shooter lane wall react to the ball in the lane")
