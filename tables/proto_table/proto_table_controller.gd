@@ -4,7 +4,8 @@ extends Node3D
 ## `scored` signal with the part that scored. Game rules live separately in
 ## `GameRules`; without rules attached the table simply re-serves the ball
 ## after a drain (sandbox play). Backspace re-serves the ball by hand.
-## The table owns a `Cabinet` for nudging and the tilt bob.
+## The table owns a `Cabinet` for nudging and the tilt bob, and a `Replay`
+## that records every physics tick (K saves, L plays back).
 
 signal ball_drained
 signal ball_launched
@@ -25,6 +26,7 @@ signal tilted
 @onready var right_flipper: Flipper = $RightFlipper
 
 var cabinet: Cabinet
+var replay: Replay
 var drained_count := 0
 ## Raw points from all parts since the table loaded (rules keep the game score).
 var score := 0
@@ -39,6 +41,10 @@ func _ready() -> void:
 	add_child(cabinet)
 	cabinet.tilt_warning.connect(tilt_warning.emit)
 	cabinet.tilted.connect(_on_tilted)
+	replay = Replay.new()
+	replay.name = "Replay"
+	replay.table = self
+	add_child(replay)
 	drain.ball_drained.connect(_on_ball_drained)
 	for node in find_children("*", "", true, false):
 		if node.has_signal("scored"):

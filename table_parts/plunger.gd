@@ -45,6 +45,12 @@ func _physics_process(delta: float) -> void:
 	step(delta)
 
 
+## Puts the rod at a retraction directly (replay playback).
+func set_pull(value: float) -> void:
+	pull = clampf(value, 0.0, max_pull)
+	position = _rest_position + Vector3(0.0, 0.0, pull)
+
+
 func step(delta: float) -> void:
 	if pulled:
 		release_speed = 0.0

@@ -37,6 +37,7 @@ func _run() -> void:
 	await _test_nudge_free_ball()
 	await _test_nudge_cradled_ball()
 	await _test_tilt()
+	await _test_replay()
 
 	print("")
 	if _failures.is_empty():
@@ -414,3 +415,43 @@ func _test_tilt() -> void:
 	if _cabinet.is_tilted or not (_left.enabled and sling.enabled and bumper.enabled):
 		_failures.append("reset_tilt does not restore the machine")
 	_ball.freeze = false
+
+
+## The replay records every tick, survives a save and load, and playback
+## puts the ball exactly where the recording says.
+func _test_replay() -> void:
+	await _load_table()
+	var replay: Replay = _table.get("replay")
+	_place_ball(_beside_flipper(_left, 0.45))
+	replay.clear()
+	await _ticks(100)
+	_left.energized = true
+	await _ticks(200)
+	_left.energized = false
+	var recorded := replay.frames()
+	var path := "user://test_replay.pbr"
+	replay.save_to_file(path)
+	var loaded := Replay.load_file(path)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+	var same := loaded.size() == recorded.size() and not loaded.is_empty() \
+			and loaded[0] == recorded[0] and loaded[-1] == recorded[-1]
+	var coil_frames := loaded.filter(func(f: PackedFloat32Array): return int(f[Replay.FIELD_INPUTS]) & 1 != 0).size()
+
+	# Where the ball is when playback hands it back to physics.
+	var end_position := [Vector3.INF]
+	replay.playback_finished.connect(func(): end_position[0] = _ball.position, CONNECT_ONE_SHOT)
+	replay.play(loaded)
+	await _ticks(loaded.size() + 2)
+	var last: PackedFloat32Array = loaded[-1]
+	var expected := Vector3(last[Replay.FIELD_POSITION], last[Replay.FIELD_POSITION + 1], last[Replay.FIELD_POSITION + 2])
+	var error: float = end_position[0].distance_to(expected)
+	print("Replay: %d frames recorded (%d with the left coil on), save/load identical: %s, playback ends %.2f mm from the recording" % [
+			recorded.size(), coil_frames, same, error * 1000.0])
+	if recorded.size() < 295 or recorded.size() > 305:
+		_failures.append("the replay recorded %d frames for 300 ticks" % recorded.size())
+	if not same:
+		_failures.append("a saved replay does not load back identically")
+	if coil_frames < 150:
+		_failures.append("the replay did not record the flipper coil")
+	if error > 0.0005 or replay.is_playing or _ball.freeze:
+		_failures.append("playback does not reproduce the recording (%.2f mm off)" % (error * 1000.0))

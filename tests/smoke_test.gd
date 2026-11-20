@@ -24,6 +24,13 @@ func _initialize() -> void:
 	input_actions.register_defaults()
 	for action: String in ["flipper_left", "flipper_right", "plunger", "nudge_left", "reset_ball"]:
 		_expect(InputMap.has_action(action), "missing input action: %s" % action)
+	# F7–F12 belong to the editor's debugger while the game runs from the
+	# editor (F8 stops the game), so no game action may use them.
+	for action: String in input_actions.ACTIONS:
+		for spec: Dictionary in input_actions.ACTIONS[action]:
+			var key: int = spec.get("key", KEY_NONE)
+			_expect(key < KEY_F7 or key > KEY_F12,
+					"%s uses %s, which the Godot editor's debugger takes" % [action, OS.get_keycode_string(key)])
 
 	if not root.has_node("DisplaySettings"):
 		var settings: Node = load("res://core/display_settings.gd").new()
