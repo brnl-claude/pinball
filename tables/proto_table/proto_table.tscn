@@ -171,6 +171,14 @@ color = Color(0.8, 0.8, 0.82, 1)
 finish = 3
 
 
+[node name="TopLeftPocketGuide" type="StaticBody3D" parent="."]
+script = ExtResource("8_rail")
+start = Vector2(-0.2, -0.476)
+end = Vector2(-0.137, -0.44)
+color = Color(0.8, 0.8, 0.82, 1)
+finish = 3
+
+
 [node name="TopLaneGuide1" type="StaticBody3D" parent="."]
 script = ExtResource("8_rail")
 start = Vector2(-0.137, -0.44)

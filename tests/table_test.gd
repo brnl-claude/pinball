@@ -43,6 +43,7 @@ func _run() -> void:
 	await _test_ramp(3.0, true)
 	await _test_ramp(4.0, true)
 	await _test_ball_passes_under_ramp()
+	await _test_top_left_corner_drains_into_lanes()
 	await _test_saucer()
 	await _test_spinner()
 
@@ -479,9 +480,12 @@ func _test_ramp(speed: float, should_make: bool) -> void:
 	var top := 0.0
 	var landed := Vector3.INF
 	var made_tick := -1
+	var trace := PackedStringArray()
 	for i in 4000:
 		await physics_frame
 		top = maxf(top, _ball.position.y)
+		if i % 50 == 0 and i <= 1000:
+			trace.append("%d:(%.3f,%.3f,%.3f)" % [i, _ball.position.x, _ball.position.y, _ball.position.z])
 		if made_tick < 0 and made_switch.hits > 0:
 			made_tick = i
 		if made_tick >= 0 and _ball.position.z > 0.1 and _ball.position.y < radius + 0.001:
@@ -493,6 +497,8 @@ func _test_ramp(speed: float, should_make: bool) -> void:
 	var glass_clearance := 0.095 + 0.001 - (top + radius)
 	print("Ramp at %.1f m/s: made %s (switch %d) after %.2f s, highest ball top %.3f m, landed at %s, score %d" % [
 			speed, made_tick >= 0, made_switch.hits, made_tick / 1000.0, top + radius, landed, _table.get("score")])
+	if should_make and made_tick < 0:
+		print("  trace: ", " ".join(trace))
 	if should_make:
 		if made_tick < 0:
 			_failures.append("ramp shot at %.1f m/s did not make the ramp" % speed)
@@ -596,3 +602,15 @@ func _test_spinner() -> void:
 		_failures.append("spinner made %d revolutions for a 2 m/s ball" % revolutions)
 	if spinner.spin != 0.0:
 		_failures.append("spinner never stopped")
+
+
+## Nothing may trap a ball above the ramp's hairpin: a ball dropped in the
+## top left corner rolls down into the top lanes.
+func _test_top_left_corner_drains_into_lanes() -> void:
+	await _load_table()
+	var radius := _ball.tuning.scaled_ball_radius()
+	_place_ball(Vector3(-0.15, radius, -0.49))
+	await _ticks(2500)
+	print("Top left corner: ball ended at %s" % _ball.position)
+	if _ball.position.z < -0.35:
+		_failures.append("a ball in the top left corner got stuck at %s" % _ball.position)
