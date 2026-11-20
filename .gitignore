@@ -11,3 +11,6 @@ build/
 .DS_Store
 *.swp
 .vscode/
+
+# CI test logs
+*.log

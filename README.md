@@ -13,7 +13,8 @@ From the command line:
 godot --path . main.tscn                                       # play
 godot --path . --headless --script res://tests/smoke_test.gd   # smoke test
 godot --path . --headless --fixed-fps 1000 --script res://tests/physics_test.gd   # physics test
-godot --path . --headless --fixed-fps 1000 --script res://tests/table_test.gd     # flipper/plunger test
+godot --path . --headless --fixed-fps 1000 --script res://tests/table_test.gd     # table parts test
+godot --path . --headless --fixed-fps 1000 --script res://tests/rules_test.gd     # game rules test
 ```
 
 ## Controls
@@ -23,11 +24,15 @@ godot --path . --headless --fixed-fps 1000 --script res://tests/table_test.gd   
 | Left / right flipper | Left / right Shift | LB / RB |
 | Plunger (hold to pull, release to launch) | Enter | A |
 | Nudge left / right / up | Z / `/` / Space | – |
-| Start | 1 | Start |
+| Start game | 1 | Start |
 | Pause | Esc | Back |
 | Switch camera | C | – |
 | Re-serve ball | Backspace | – |
 | Debug overlay | F3 | – |
+
+## Game rules
+
+Press **1** to start a game: 3 balls, an 8-second ball save after each launch, and an end-of-ball bonus. Rollovers, standups and drop targets add to the bonus; lighting all three top lanes advances the bonus multiplier (up to 5×), and lighting all three standups scores 5,000. The top 5 scores are saved in `user://high_scores.cfg`.
 
 ## Settings (Phase 0)
 
@@ -51,4 +56,4 @@ godot --path . --headless --fixed-fps 1000 --script res://tests/table_test.gd   
 
 ## CI
 
-On every push and PR, GitHub Actions imports the project, runs the smoke, physics and table tests (results in the run summary) and builds a Linux export, which can be downloaded as an artifact from the run.
+On every push and PR, GitHub Actions imports the project, runs the smoke, physics, table and rules tests (results in the run summary) and builds a Linux export, which can be downloaded as an artifact from the run.
