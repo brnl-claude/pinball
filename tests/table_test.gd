@@ -650,8 +650,11 @@ func _test_ramp_from_right_flipper() -> void:
 		var crossing_speed := 0.0
 		var crossing_spin := 0.0
 		var furthest := Vector3(0.0, 0.0, INF)
+		var path := PackedStringArray()
 		for i in 2500:
 			await physics_frame
+			if crossing != Vector3.INF and path.size() < 16 and i % 15 == 0:
+				path.append("(%.3f,%.3f,%.3f)" % [_ball.position.x, _ball.position.y, _ball.position.z])
 			if i == 400:
 				_right.energized = false
 			if crossing == Vector3.INF and _ball.position.z < -0.03:
@@ -665,6 +668,8 @@ func _test_ramp_from_right_flipper() -> void:
 				break
 		if made_switch.hits > 0:
 			made.append(str(delay_ms))
+		elif crossing != Vector3.INF and absf(crossing.x + 0.105) < 0.03:
+			report.append("    path after the mouth: " + " ".join(path))
 		report.append("%d ms after the ball reached the flipper: %s" % [delay_ms, "MADE" if made_switch.hits > 0 else (
 				"crossed x %.3f at %.1f m/s (spin/roll %.2f), got to %s" % [crossing.x, crossing_speed,
 						crossing_spin, furthest] if crossing != Vector3.INF
