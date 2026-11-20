@@ -98,7 +98,7 @@ func _check_layout_profiles() -> void:
 		var logical := ScreenRotation.logical_size(real, degrees)
 		var xf := ScreenRotation.canvas_transform(real, degrees)
 		var mapped := Rect2(xf * Vector2.ZERO, Vector2.ZERO).expand(xf * logical)
-		_expect(mapped.position.is_equal_approx(Vector2.ZERO) and mapped.size.is_equal_approx(real),
+		_expect(mapped.position.distance_to(Vector2.ZERO) < 0.01 and mapped.size.distance_to(real) < 0.01,
 				"screen rotation %d° does not map the view onto the screen (%s)" % [degrees, mapped])
 
 	var settings := root.get_node_or_null("DisplaySettings")
@@ -109,16 +109,18 @@ func _check_layout_profiles() -> void:
 		return
 	var saved: int = settings.get("screen_rotation")
 	settings.call("set_screen_rotation", 0)
-	var wide: bool = camera.viewport_aspect() >= 1.0
+	var aspect_before: float = camera.viewport_aspect()
 	_expect(hud.layout == camera.active_preset().hud_layout, "the HUD follows the camera's layout profile")
 	settings.call("set_screen_rotation", 90)
-	_expect((camera.viewport_aspect() >= 1.0) != wide, "a quarter turn swaps the aspect ratio")
+	var aspect_after: float = camera.viewport_aspect()
+	_expect(is_equal_approx(aspect_after, 1.0 / aspect_before),
+			"a quarter turn swaps the aspect ratio (%.3f → %.3f)" % [aspect_before, aspect_after])
 	_expect(camera.keep_aspect == Camera3D.KEEP_WIDTH, "a quarter turn keeps the logical vertical FOV")
 	_expect(camera.global_transform.basis.x.dot(Vector3.RIGHT) < 0.1,
 			"a quarter turn rolls the camera")
 	_expect(hud.layout == camera.active_preset().hud_layout, "the HUD follows the rotated profile")
 	_expect(is_equal_approx(hud.transform.get_rotation(), PI / 2.0), "a quarter turn rotates the HUD")
-	print("Layout when rotated: %s" % camera.profile_name())
+	print("Layout: %.2f:1 unrotated, rotated 90°: %s" % [aspect_before, camera.profile_name()])
 	settings.call("set_screen_rotation", saved)
 
 
