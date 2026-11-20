@@ -13,6 +13,7 @@ From the command line:
 godot --path . main.tscn                                       # play
 godot --path . --headless --script res://tests/smoke_test.gd   # smoke test
 godot --path . --headless --fixed-fps 1000 --script res://tests/physics_test.gd   # physics test
+godot --path . --headless --fixed-fps 1000 --script res://tests/table_test.gd     # flipper/plunger test
 ```
 
 ## Controls
@@ -20,12 +21,12 @@ godot --path . --headless --fixed-fps 1000 --script res://tests/physics_test.gd 
 | Action | Keyboard | Gamepad |
 |---|---|---|
 | Left / right flipper | Left / right Shift | LB / RB |
-| Plunger | Enter | A |
+| Plunger (hold to pull, release to launch) | Enter | A |
 | Nudge left / right / up | Z / `/` / Space | – |
 | Start | 1 | Start |
 | Pause | Esc | Back |
 | Switch camera | C | – |
-| Reset ball (sandbox) | Backspace | – |
+| Re-serve ball | Backspace | – |
 | Debug overlay | F3 | – |
 
 ## Settings (Phase 0)
@@ -50,4 +51,4 @@ godot --path . --headless --fixed-fps 1000 --script res://tests/physics_test.gd 
 
 ## CI
 
-On every push and PR, GitHub Actions imports the project, runs the smoke test and the physics test (results in the run summary) and builds a Linux export, which can be downloaded as an artifact from the run.
+On every push and PR, GitHub Actions imports the project, runs the smoke, physics and table tests (results in the run summary) and builds a Linux export, which can be downloaded as an artifact from the run.

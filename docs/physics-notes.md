@@ -42,3 +42,21 @@ Other notes:
 
 - Box shapes use a 1 mm collision margin (Godot's default is 4 cm), so thin walls and guides are not rounded off.
 - The ball has `can_sleep = false` and no damping; gravity is applied as a constant force so the table slope lives in `PhysicsTuning`.
+
+## Phase 2 results
+
+From `tests/table_test.gd` on the prototype table:
+
+| Test | Result |
+|---|---|
+| Flipper stroke | up in 33 ms, back to rest in 37 ms (real flippers: ~30–50 ms) |
+| Flipper shot (ball rolling down a resting flipper, hit at mid-length) | peak 3.55 m/s straight up the table |
+| Cradle (ball dropped near the tip of a raised flipper) | settles after 3 s at 0.007 m/s, 29 mm from the pivot, no drain |
+| Plunger at 100% | ball leaves the shooter lane and reaches the top arc |
+| Plunger at 10% | ball rolls back without leaving the lane |
+| Ball in the left outlane | drains once |
+
+Tuning notes:
+
+- Flipper shots are on the soft side; real machines reach roughly 4–6 m/s off the sweet spot. Raise `up_max_speed` or the rubber `bounce` when the first ramp needs it, or move to the custom contact impulse planned for Phase 5.
+- The drain reports each ball once until it is served again, because a drained ball can bounce in and out of the drain area.
