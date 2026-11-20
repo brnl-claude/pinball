@@ -181,7 +181,8 @@ static func newest_file() -> String:
 
 ## Plays frames back: the ball follows the recording exactly (it is frozen
 ## and moved kinematically) and the flippers and plunger take the recorded
-## positions. Recording pauses meanwhile.
+## positions. Recording pauses meanwhile. When the recording ends, the ball
+## gets its recorded velocity back and physics carries on from there.
 func play(recorded: Array[PackedFloat32Array]) -> void:
 	if recorded.is_empty():
 		return
@@ -208,6 +209,11 @@ func stop() -> void:
 	var ball: RigidBody3D = table.get("ball")
 	if ball:
 		ball.freeze = false
+		# Carry on from the last recorded state.
+		if not _playback.is_empty():
+			var last := _playback[mini(_playback_index, _playback.size()) - 1]
+			ball.linear_velocity = _get3(last, FIELD_VELOCITY)
+			ball.angular_velocity = _get3(last, FIELD_SPIN)
 	for part_name: String in ["left_flipper", "right_flipper", "plunger", "cabinet"]:
 		var part: Node = table.get(part_name)
 		if part:

@@ -437,11 +437,14 @@ func _test_replay() -> void:
 			and loaded[0] == recorded[0] and loaded[-1] == recorded[-1]
 	var coil_frames := loaded.filter(func(f: PackedFloat32Array): return int(f[Replay.FIELD_INPUTS]) & 1 != 0).size()
 
+	# Where the ball is when playback hands it back to physics.
+	var end_position := [Vector3.INF]
+	replay.playback_finished.connect(func(): end_position[0] = _ball.position, CONNECT_ONE_SHOT)
 	replay.play(loaded)
 	await _ticks(loaded.size() + 2)
 	var last: PackedFloat32Array = loaded[-1]
 	var expected := Vector3(last[Replay.FIELD_POSITION], last[Replay.FIELD_POSITION + 1], last[Replay.FIELD_POSITION + 2])
-	var error := _ball.position.distance_to(expected)
+	var error: float = end_position[0].distance_to(expected)
 	print("Replay: %d frames recorded (%d with the left coil on), save/load identical: %s, playback ends %.2f mm from the recording" % [
 			recorded.size(), coil_frames, same, error * 1000.0])
 	if recorded.size() < 295 or recorded.size() > 305:
