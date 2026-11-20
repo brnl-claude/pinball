@@ -34,6 +34,17 @@ extends StaticBody3D
 	set(value):
 		guard_height = value
 		_rebuild()
+## At the entrance the guard wires start this much wider (m) and close in
+## over `flare_length`, so a ball riding a ramp wall into the wire ramp is
+## funnelled in instead of hitting the guard wire's end head-on.
+@export var entry_flare := 0.008:
+	set(value):
+		entry_flare = value
+		_rebuild()
+@export var flare_length := 0.05:
+	set(value):
+		flare_length = value
+		_rebuild()
 @export var guards := true:
 	set(value):
 		guards = value
@@ -101,13 +112,21 @@ func _rebuild() -> void:
 	var basis_list := RampPath.frames(samples)
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for offset in wire_offsets():
+	var distance := PackedFloat32Array([0.0])
+	for i in range(1, samples.size()):
+		distance.append(distance[i - 1] + samples[i].distance_to(samples[i - 1]))
+	var offsets := wire_offsets()
+	for k in offsets.size():
+		var offset := offsets[k]
+		var is_guard := k >= 2
 		var wire := PackedVector3Array()
 		for i in samples.size():
-			wire.append(samples[i] + basis_list[i].x * offset.x + basis_list[i].y * offset.y)
+			var side := offset.x
+			if is_guard and flare_length > 0.0:
+				side += signf(side) * entry_flare * (1.0 - smoothstep(0.0, flare_length, distance[i]))
+			wire.append(samples[i] + basis_list[i].x * side + basis_list[i].y * offset.y)
 		_add_capsules(wire)
-		RampPath.extrude(tool, samples, basis_list, RampPath.circle(wire_radius, 8, offset), true,
-				true, offset)
+		RampPath.extrude(tool, wire, RampPath.frames(wire), RampPath.circle(wire_radius, 8), true, true)
 
 	var mesh_node := MeshInstance3D.new()
 	var mesh := tool.commit()

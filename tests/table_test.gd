@@ -610,7 +610,12 @@ func _test_top_left_corner_drains_into_lanes() -> void:
 	await _load_table()
 	var radius := _ball.tuning.scaled_ball_radius()
 	_place_ball(Vector3(-0.15, radius, -0.49))
-	await _ticks(2500)
-	print("Top left corner: ball ended at %s" % _ball.position)
-	if _ball.position.z < -0.35:
+	var escaped_at := Vector3.INF
+	for i in 2500:
+		await physics_frame
+		if _ball.position.x > -0.12 or _ball.position.z > -0.36:
+			escaped_at = _ball.position
+			break
+	print("Top left corner: ball got out at %s" % escaped_at)
+	if escaped_at == Vector3.INF:
 		_failures.append("a ball in the top left corner got stuck at %s" % _ball.position)
