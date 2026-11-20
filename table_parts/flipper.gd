@@ -66,6 +66,8 @@ const SEGMENTS := 16
 
 ## When false, `energized` is driven by code (tests, attract mode, tilt).
 var use_input := true
+## When false the coil is dead (game over, end of ball, tilt).
+var enabled := true
 var energized := false
 ## Current angle from rest in radians (0 … stroke).
 var stroke_angle := 0.0
@@ -87,6 +89,8 @@ func _physics_process(delta: float) -> void:
 		return
 	if use_input:
 		energized = Input.is_action_pressed(input_action)
+	if not enabled:
+		energized = false
 	if energized and not _was_energized:
 		SoundFx.play("flipper")
 	_was_energized = energized

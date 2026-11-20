@@ -52,7 +52,7 @@ jobs:
             exit 1
           fi
 
-      - name: Physics and table tests
+      - name: Physics, table and rules tests
         run: |
           set -o pipefail
           ~/godot/godot --headless --fixed-fps 1000 --script res://tests/physics_test.gd 2>&1 | tee physics.log
@@ -62,6 +62,11 @@ jobs:
           fi
           ~/godot/godot --headless --fixed-fps 1000 --script res://tests/table_test.gd 2>&1 | tee table.log
           if grep -qE "SCRIPT ERROR|Parse Error|Failed to load script" table.log; then
+            echo "::error::Script errors found in the logs"
+            exit 1
+          fi
+          ~/godot/godot --headless --fixed-fps 1000 --script res://tests/rules_test.gd 2>&1 | tee rules.log
+          if grep -qE "SCRIPT ERROR|Parse Error|Failed to load script" rules.log; then
             echo "::error::Script errors found in the logs"
             exit 1
           fi
