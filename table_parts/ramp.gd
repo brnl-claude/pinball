@@ -25,6 +25,13 @@ extends StaticBody3D
 	set(value):
 		wall_height = value
 		_rebuild()
+## Width of the rolled lip along the top of each wall, pointing inward (m).
+## With the gap between the lips narrower than the ball, a ball whose spin
+## rubs it up the wall in a turn cannot jump out. 0 leaves the top open.
+@export var lip := 0.008:
+	set(value):
+		lip = value
+		_rebuild()
 ## Thickness of the plastic, for the visible mesh only (m).
 @export var thickness := 0.003:
 	set(value):
@@ -86,6 +93,11 @@ func _rebuild() -> void:
 	faces.append_array(RampPath.ribbon_faces(samples, basis_list, Vector2(-half, 0.0), Vector2(half, 0.0)))
 	faces.append_array(RampPath.ribbon_faces(samples, basis_list, Vector2(-half, 0.0), Vector2(-half, wall_height)))
 	faces.append_array(RampPath.ribbon_faces(samples, basis_list, Vector2(half, 0.0), Vector2(half, wall_height)))
+	if lip > 0.0:
+		faces.append_array(RampPath.ribbon_faces(samples, basis_list, Vector2(-half, wall_height),
+				Vector2(-half + lip, wall_height)))
+		faces.append_array(RampPath.ribbon_faces(samples, basis_list, Vector2(half, wall_height),
+				Vector2(half - lip, wall_height)))
 	var skirts := _skirt_faces(samples, basis_list)
 	faces.append_array(skirts)
 	var shape := ConcavePolygonShape3D.new()
@@ -100,11 +112,19 @@ func _rebuild() -> void:
 
 	# A U-shaped slab of plastic.
 	var outer := half + thickness
+	var inner := half - maxf(lip, 0.0)
+	var top := wall_height + (thickness if lip > 0.0 else 0.0)
 	var profile := PackedVector2Array([
 		Vector2(-half, wall_height), Vector2(-half, 0.0), Vector2(half, 0.0), Vector2(half, wall_height),
-		Vector2(outer, wall_height), Vector2(outer, -thickness), Vector2(-outer, -thickness),
-		Vector2(-outer, wall_height),
+		Vector2(outer, top), Vector2(outer, -thickness), Vector2(-outer, -thickness), Vector2(-outer, top),
 	])
+	if lip > 0.0:
+		profile = PackedVector2Array([
+			Vector2(-inner, wall_height), Vector2(-half, wall_height), Vector2(-half, 0.0),
+			Vector2(half, 0.0), Vector2(half, wall_height), Vector2(inner, wall_height),
+			Vector2(inner, top), Vector2(outer, top), Vector2(outer, -thickness),
+			Vector2(-outer, -thickness), Vector2(-outer, top), Vector2(-inner, top),
+		])
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 	RampPath.extrude(tool, samples, basis_list, profile, true, false)
