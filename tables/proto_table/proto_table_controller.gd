@@ -1,8 +1,11 @@
 extends Node3D
-## Prototype table: serves the ball into the shooter lane, and serves a new
-## one after the ball drains. Backspace re-serves the ball by hand.
+## Prototype table: serves the ball into the shooter lane, serves a new one
+## after the ball drains, and keeps a simple score from every part that
+## emits `scored`. Backspace re-serves the ball by hand. Full game rules
+## (balls per game, bonus, high scores) arrive in Phase 4.
 
 signal ball_drained
+signal score_changed(score: int)
 
 @export var respawn_delay := 1.0
 
@@ -13,11 +16,21 @@ signal ball_drained
 @onready var right_flipper: Flipper = $RightFlipper
 
 var drained_count := 0
+var score := 0
 
 
 func _ready() -> void:
+	add_to_group("table")
 	drain.ball_drained.connect(_on_ball_drained)
+	for node in find_children("*", "", true, false):
+		if node.has_signal("scored"):
+			node.connect("scored", _on_scored)
 	serve_ball()
+
+
+func _on_scored(points: int) -> void:
+	score += points
+	score_changed.emit(score)
 
 
 func _physics_process(_delta: float) -> void:

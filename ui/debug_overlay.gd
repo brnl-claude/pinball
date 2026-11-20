@@ -38,6 +38,9 @@ func build_text() -> String:
 			Engine.physics_ticks_per_second,
 		],
 	])
+	var table := get_tree().get_first_node_in_group("table")
+	if table:
+		lines.append("Score: %d" % table.get("score"))
 	var balls := get_tree().get_nodes_in_group("balls")
 	if not balls.is_empty():
 		lines.append("Ball speed: %.2f m/s" % (balls[0] as RigidBody3D).linear_velocity.length())

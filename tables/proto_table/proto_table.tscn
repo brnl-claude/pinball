@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://tables/proto_table/proto_table_controller.gd" id="1_ctrl"]
 [ext_resource type="Script" path="res://table_parts/wall.gd" id="2_wall"]
@@ -7,6 +7,13 @@
 [ext_resource type="Script" path="res://table_parts/flipper.gd" id="5_flipper"]
 [ext_resource type="Script" path="res://table_parts/plunger.gd" id="6_plunger"]
 [ext_resource type="Script" path="res://table_parts/drain.gd" id="7_drain"]
+[ext_resource type="Script" path="res://table_parts/rail.gd" id="8_rail"]
+[ext_resource type="Script" path="res://table_parts/slingshot.gd" id="9_sling"]
+[ext_resource type="Script" path="res://table_parts/pop_bumper.gd" id="10_bumper"]
+[ext_resource type="Script" path="res://table_parts/standup_target.gd" id="11_standup"]
+[ext_resource type="Script" path="res://table_parts/drop_target.gd" id="12_drop"]
+[ext_resource type="Script" path="res://table_parts/drop_target_bank.gd" id="13_bank"]
+[ext_resource type="Script" path="res://table_parts/rollover.gd" id="14_rollover"]
 
 [node name="ProtoTable" type="Node3D"]
 script = ExtResource("1_ctrl")
@@ -95,23 +102,164 @@ script = ExtResource("2_wall")
 size = Vector3(0.107, 0.04, 0.005)
 color = Color(0.8, 0.8, 0.82, 1)
 
-[node name="PostLeft" type="StaticBody3D" parent="."]
-position = Vector3(-0.1, 0.02, -0.15)
-script = ExtResource("2_wall")
-size = Vector3(0.02, 0.04, 0.02)
-color = Color(0.9, 0.3, 0.2, 1)
+[node name="LeftSlingshot" type="StaticBody3D" parent="."]
+script = ExtResource("9_sling")
+start = Vector2(-0.18, 0.2)
+end = Vector2(-0.13, 0.33)
+color = Color(0.8, 0.8, 0.82, 1)
+thickness = 0.008
+bounce = 0.6
 
-[node name="PostRight" type="StaticBody3D" parent="."]
-position = Vector3(0.05, 0.02, -0.15)
-script = ExtResource("2_wall")
-size = Vector3(0.02, 0.04, 0.02)
-color = Color(0.9, 0.3, 0.2, 1)
 
-[node name="PostTop" type="StaticBody3D" parent="."]
-position = Vector3(-0.0275, 0.02, -0.3)
-script = ExtResource("2_wall")
-size = Vector3(0.02, 0.04, 0.02)
-color = Color(0.9, 0.3, 0.2, 1)
+[node name="LeftSlingSide" type="StaticBody3D" parent="."]
+script = ExtResource("8_rail")
+start = Vector2(-0.18, 0.2)
+end = Vector2(-0.18, 0.3)
+color = Color(0.8, 0.8, 0.82, 1)
+
+
+[node name="LeftSlingBottom" type="StaticBody3D" parent="."]
+script = ExtResource("8_rail")
+start = Vector2(-0.18, 0.3)
+end = Vector2(-0.13, 0.33)
+color = Color(0.8, 0.8, 0.82, 1)
+
+
+[node name="RightSlingshot" type="StaticBody3D" parent="."]
+script = ExtResource("9_sling")
+start = Vector2(0.075, 0.33)
+end = Vector2(0.125, 0.2)
+color = Color(0.8, 0.8, 0.82, 1)
+thickness = 0.008
+bounce = 0.6
+
+
+[node name="RightSlingSide" type="StaticBody3D" parent="."]
+script = ExtResource("8_rail")
+start = Vector2(0.125, 0.2)
+end = Vector2(0.125, 0.3)
+color = Color(0.8, 0.8, 0.82, 1)
+
+
+[node name="RightSlingBottom" type="StaticBody3D" parent="."]
+script = ExtResource("8_rail")
+start = Vector2(0.125, 0.3)
+end = Vector2(0.075, 0.33)
+color = Color(0.8, 0.8, 0.82, 1)
+
+
+[node name="TopLaneGuide1" type="StaticBody3D" parent="."]
+script = ExtResource("8_rail")
+start = Vector2(-0.137, -0.44)
+end = Vector2(-0.137, -0.37)
+color = Color(0.8, 0.8, 0.82, 1)
+
+
+[node name="TopLaneGuide2" type="StaticBody3D" parent="."]
+script = ExtResource("8_rail")
+start = Vector2(-0.064, -0.44)
+end = Vector2(-0.064, -0.37)
+color = Color(0.8, 0.8, 0.82, 1)
+
+
+[node name="TopLaneGuide3" type="StaticBody3D" parent="."]
+script = ExtResource("8_rail")
+start = Vector2(0.009, -0.44)
+end = Vector2(0.009, -0.37)
+color = Color(0.8, 0.8, 0.82, 1)
+
+
+[node name="TopLaneGuide4" type="StaticBody3D" parent="."]
+script = ExtResource("8_rail")
+start = Vector2(0.082, -0.44)
+end = Vector2(0.082, -0.37)
+color = Color(0.8, 0.8, 0.82, 1)
+
+
+[node name="PopBumper1" type="StaticBody3D" parent="."]
+position = Vector3(-0.09, 0, -0.25)
+script = ExtResource("10_bumper")
+
+[node name="PopBumper2" type="StaticBody3D" parent="."]
+position = Vector3(0.035, 0, -0.25)
+script = ExtResource("10_bumper")
+
+[node name="PopBumper3" type="StaticBody3D" parent="."]
+position = Vector3(-0.0275, 0, -0.15)
+script = ExtResource("10_bumper")
+
+[node name="StandupTarget1" type="StaticBody3D" parent="."]
+position = Vector3(-0.251, 0.015, -0.06)
+script = ExtResource("11_standup")
+size = Vector3(0.006, 0.03, 0.028)
+color = Color(0.15, 0.55, 0.65, 1)
+bounce = 0.2
+
+[node name="StandupTarget2" type="StaticBody3D" parent="."]
+position = Vector3(-0.251, 0.015, -0.025)
+script = ExtResource("11_standup")
+size = Vector3(0.006, 0.03, 0.028)
+color = Color(0.15, 0.55, 0.65, 1)
+bounce = 0.2
+
+[node name="StandupTarget3" type="StaticBody3D" parent="."]
+position = Vector3(-0.251, 0.015, 0.01)
+script = ExtResource("11_standup")
+size = Vector3(0.006, 0.03, 0.028)
+color = Color(0.15, 0.55, 0.65, 1)
+bounce = 0.2
+
+[node name="DropTargetBank" type="Node3D" parent="."]
+script = ExtResource("13_bank")
+
+[node name="DropTarget1" type="StaticBody3D" parent="DropTargetBank"]
+position = Vector3(0.196, 0.015, -0.1)
+script = ExtResource("12_drop")
+size = Vector3(0.006, 0.03, 0.028)
+color = Color(0.95, 0.75, 0.1, 1)
+bounce = 0.2
+
+[node name="DropTarget2" type="StaticBody3D" parent="DropTargetBank"]
+position = Vector3(0.196, 0.015, -0.065)
+script = ExtResource("12_drop")
+size = Vector3(0.006, 0.03, 0.028)
+color = Color(0.95, 0.75, 0.1, 1)
+bounce = 0.2
+
+[node name="DropTarget3" type="StaticBody3D" parent="DropTargetBank"]
+position = Vector3(0.196, 0.015, -0.03)
+script = ExtResource("12_drop")
+size = Vector3(0.006, 0.03, 0.028)
+color = Color(0.95, 0.75, 0.1, 1)
+bounce = 0.2
+
+[node name="TopLaneRollover1" type="Area3D" parent="."]
+position = Vector3(-0.1005, 0, -0.4)
+script = ExtResource("14_rollover")
+
+[node name="TopLaneRollover2" type="Area3D" parent="."]
+position = Vector3(-0.0275, 0, -0.4)
+script = ExtResource("14_rollover")
+
+[node name="TopLaneRollover3" type="Area3D" parent="."]
+position = Vector3(0.0455, 0, -0.4)
+script = ExtResource("14_rollover")
+
+[node name="LeftOutlaneRollover" type="Area3D" parent="."]
+position = Vector3(-0.2375, 0, 0.24)
+script = ExtResource("14_rollover")
+
+[node name="LeftInlaneRollover" type="Area3D" parent="."]
+position = Vector3(-0.2, 0, 0.24)
+script = ExtResource("14_rollover")
+
+[node name="RightInlaneRollover" type="Area3D" parent="."]
+position = Vector3(0.144, 0, 0.24)
+script = ExtResource("14_rollover")
+
+[node name="RightOutlaneRollover" type="Area3D" parent="."]
+position = Vector3(0.1825, 0, 0.24)
+script = ExtResource("14_rollover")
 
 [node name="LeftFlipper" type="AnimatableBody3D" parent="."]
 position = Vector3(-0.1225, 0, 0.4)

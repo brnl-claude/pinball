@@ -72,6 +72,7 @@ var stroke_angle := 0.0
 ## Angular speed in rad/s; positive moves toward the end of the stroke.
 var angular_speed := 0.0
 
+var _was_energized := false
 var _shape_node: CollisionShape3D
 var _mesh_node: MeshInstance3D
 
@@ -86,6 +87,9 @@ func _physics_process(delta: float) -> void:
 		return
 	if use_input:
 		energized = Input.is_action_pressed(input_action)
+	if energized and not _was_energized:
+		SoundFx.play("flipper")
+	_was_energized = energized
 	step(delta)
 
 

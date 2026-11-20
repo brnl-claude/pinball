@@ -52,6 +52,7 @@ func step(delta: float) -> void:
 	elif pull > 0.0:
 		if release_speed == 0.0:
 			release_speed = max_release_speed * pull / max_pull
+			SoundFx.play("plunger")
 		pull = maxf(pull - release_speed * delta, 0.0)
 		if pull == 0.0:
 			release_speed = 0.0

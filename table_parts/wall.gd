@@ -25,6 +25,9 @@ extends StaticBody3D
 		bounce = value
 		_rebuild()
 
+## The visible surface material, so subclasses can light it up.
+var surface_material: StandardMaterial3D
+
 var _shape_node: CollisionShape3D
 var _mesh_node: MeshInstance3D
 
@@ -57,8 +60,8 @@ func _rebuild() -> void:
 	_mesh_node.visible = show_mesh
 	var mesh := BoxMesh.new()
 	mesh.size = size
-	var surface := StandardMaterial3D.new()
-	surface.albedo_color = color
-	surface.roughness = 0.6
-	mesh.material = surface
+	surface_material = StandardMaterial3D.new()
+	surface_material.albedo_color = color
+	surface_material.roughness = 0.6
+	mesh.material = surface_material
 	_mesh_node.mesh = mesh
