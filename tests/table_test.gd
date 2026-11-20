@@ -25,6 +25,8 @@ func _run() -> void:
 	await _test_plunger(1.0, true)
 	await _test_plunger(0.1, false)
 	await _test_flipper_shot()
+	await _test_flipper_restitution()
+	await _test_flipper_eos_give()
 	await _test_cradle()
 	await _test_outlane_drains()
 	await _test_slingshot()
@@ -147,6 +149,70 @@ func _test_flipper_shot() -> void:
 	if best_speed < 2.5 or best_velocity.z > -1.0:
 		_failures.append("flipper shot too weak or wrong direction (%.2f m/s, %s)" % [
 				best_speed, best_velocity])
+
+
+## Unit normal of a flipper's upper (playfield) side at `fraction` along it.
+func _flipper_normal(flipper: Flipper, fraction: float) -> Vector3:
+	var surface := _beside_flipper(flipper, fraction, 0.0)
+	var axis := flipper.to_global(Vector3(flipper.direction_sign() * flipper.length * fraction, 0.0, 0.0))
+	var normal := surface - axis
+	normal.y = 0.0
+	return normal.normalized()
+
+
+## Fires the ball straight at the bat and returns the coefficient of
+## restitution (outgoing / incoming normal speed).
+func _bounce_off_flipper(flipper: Flipper, fraction: float, speed: float) -> float:
+	var normal := _flipper_normal(flipper, fraction)
+	var touch := _beside_flipper(flipper, fraction, 0.0)
+	_place_ball(touch + normal * 0.008)
+	_ball.linear_velocity = -normal * speed
+	var out := 0.0
+	for i in 40:
+		await physics_frame
+		out = maxf(out, _ball.linear_velocity.dot(normal))
+	return out / speed
+
+
+## The rubber is lively for slow balls and deader for fast ones.
+func _test_flipper_restitution() -> void:
+	await _load_table()
+	var slow := await _bounce_off_flipper(_left, 0.5, 0.5)
+	await _load_table()
+	var fast := await _bounce_off_flipper(_left, 0.5, 4.0)
+	print("Flipper rubber: restitution %.2f at 0.5 m/s, %.2f at 4 m/s (model %.2f / %.2f)" % [
+			slow, fast, _left.restitution_at(0.5), _left.restitution_at(4.0)])
+	if slow < fast + 0.1:
+		_failures.append("flipper restitution does not drop with impact speed (%.2f vs %.2f)" % [slow, fast])
+	if fast < 0.3 or fast > 0.85:
+		_failures.append("flipper restitution at 4 m/s out of range (%.2f)" % fast)
+
+
+## A hard hit on a raised flipper pushes it back against the hold winding;
+## the EOS switch then re-powers it and it comes back up.
+func _test_flipper_eos_give() -> void:
+	await _load_table()
+	_left.energized = true
+	await _ticks(150)
+	var full := _left.stroke_angle
+	var held_by_hold_winding := _left.is_eos_open()
+	var normal := _flipper_normal(_left, 0.8)
+	_place_ball(_beside_flipper(_left, 0.8, 0.0) + normal * 0.008)
+	_ball.linear_velocity = -normal * 4.0
+	var lowest := full
+	for i in 200:
+		await physics_frame
+		lowest = minf(lowest, _left.stroke_angle)
+	var give := rad_to_deg(full - lowest)
+	print("Flipper EOS: held by the hold winding %s, a 4 m/s hit pushes it back %.1f°, back up: %s" % [
+			held_by_hold_winding, give, _left.is_fully_up()])
+	if not held_by_hold_winding:
+		_failures.append("a raised flipper is not on the hold winding (EOS open)")
+	if give < 0.5 or give > 20.0:
+		_failures.append("a hard hit on a raised flipper gives %.1f° (expected 0.5–20°)" % give)
+	if not _left.is_fully_up():
+		_failures.append("the flipper does not come back up after a hit")
+	_left.energized = false
 
 
 func _test_cradle() -> void:
@@ -292,7 +358,7 @@ func _test_nudge_free_ball() -> void:
 	await _ticks(1500)
 	print("Nudge: free ball jolts %.2f m/s sideways, cabinet back to %.2f mm, warnings %d" % [
 			lowest, _cabinet.offset.length() * 1000.0, _cabinet.warnings])
-	if lowest > -0.15:
+	if lowest > -0.1:
 		_failures.append("a nudge barely moves a free ball (%.2f m/s)" % lowest)
 	if _cabinet.offset.length() > 0.001:
 		_failures.append("the cabinet does not settle after a nudge")

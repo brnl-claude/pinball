@@ -22,6 +22,10 @@ var _mesh_node: MeshInstance3D
 var _touching := {}
 ## Parts touched for the first time in the last physics step.
 var _new_hits: Array[Object] = []
+## Velocity just before the contacts in the last step were resolved, i.e.
+## the impact velocity for parts that receive `on_ball_hit` this tick.
+var impact_velocity := Vector3.ZERO
+var _velocity_before_step := Vector3.ZERO
 ## Acceleration of the playfield (the physics frame), e.g. during a nudge.
 var _frame_acceleration := Vector3.ZERO
 
@@ -65,6 +69,9 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		if not _touching.has(id):
 			_new_hits.append(collider)
 	_touching = touching_now
+	if not _new_hits.is_empty():
+		impact_velocity = _velocity_before_step
+	_velocity_before_step = state.linear_velocity
 
 
 ## Tells table parts that the ball hit them. Parts opt in by implementing
@@ -133,6 +140,8 @@ func speed() -> float:
 func reset_to(target: Transform3D) -> void:
 	_touching.clear()
 	_new_hits.clear()
+	impact_velocity = Vector3.ZERO
+	_velocity_before_step = Vector3.ZERO
 	global_transform = target
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
