@@ -12,6 +12,7 @@ From the command line:
 ```sh
 godot --path . main.tscn                                       # play
 godot --path . --headless --script res://tests/smoke_test.gd   # smoke test
+godot --path . --headless --fixed-fps 1000 --script res://tests/physics_test.gd   # physics test
 ```
 
 ## Controls
@@ -24,6 +25,7 @@ godot --path . --headless --script res://tests/smoke_test.gd   # smoke test
 | Start | 1 | Start |
 | Pause | Esc | Back |
 | Switch camera | C | – |
+| Reset ball (sandbox) | Backspace | – |
 | Debug overlay | F3 | – |
 
 ## Settings (Phase 0)
@@ -48,4 +50,4 @@ godot --path . --headless --script res://tests/smoke_test.gd   # smoke test
 
 ## CI
 
-On every push and PR, GitHub Actions imports the project, runs the smoke test and builds a Linux export, which can be downloaded as an artifact from the run.
+On every push and PR, GitHub Actions imports the project, runs the smoke test and the physics test (results in the run summary) and builds a Linux export, which can be downloaded as an artifact from the run.

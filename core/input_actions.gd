@@ -29,6 +29,7 @@ const ACTIONS := {
 		{"key": KEY_ESCAPE},
 		{"joy_button": JOY_BUTTON_BACK},
 	],
+	"reset_ball": [{"key": KEY_BACKSPACE}],
 	"camera_next": [{"key": KEY_C}],
 	"toggle_debug": [{"key": KEY_F3}],
 }

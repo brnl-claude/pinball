@@ -1,8 +1,9 @@
 extends CanvasLayer
-## Debug overlay: FPS, physics tick rate, physics engine, resolution and
-## aspect ratio. Toggle with F3.
+## Debug overlay: FPS, frame time, physics engine and tick rate, ball speed,
+## camera profile, resolution and aspect ratio. Toggle with F3.
 
 var _label: Label
+var _frame_ms := 0.0
 
 
 func _ready() -> void:
@@ -19,27 +20,36 @@ func _unhandled_input(event: InputEvent) -> void:
 		visible = not visible
 
 
-func _process(_delta: float) -> void:
-	if not visible:
-		return
-	_label.text = build_text()
+func _process(delta: float) -> void:
+	# Smoothed frame time, so the number is readable.
+	_frame_ms = lerpf(_frame_ms, delta * 1000.0, 0.1)
+	if visible:
+		_label.text = build_text()
 
 
 func build_text() -> String:
 	var size := get_viewport().get_visible_rect().size
 	var window_size := DisplayServer.window_get_size()
 	var aspect := float(window_size.x) / maxf(1.0, float(window_size.y))
-	return "\n".join([
-		"FPS: %d" % Engine.get_frames_per_second(),
+	var lines := PackedStringArray([
+		"FPS: %d  (%.2f ms)" % [Engine.get_frames_per_second(), _frame_ms],
 		"Physics: %s @ %d Hz" % [
 			ProjectSettings.get_setting("physics/3d/physics_engine"),
 			Engine.physics_ticks_per_second,
 		],
-		"Window: %d×%d (%.2f:1)  viewport %d×%d" % [
-			window_size.x, window_size.y, aspect, size.x, size.y,
-		],
-		"Display: %s / %s" % [
-			DisplayServer.get_name(),
-			RenderingServer.get_current_rendering_driver_name(),
-		],
 	])
+	var balls := get_tree().get_nodes_in_group("balls")
+	if not balls.is_empty():
+		lines.append("Ball speed: %.2f m/s" % (balls[0] as RigidBody3D).linear_velocity.length())
+	var camera := get_viewport().get_camera_3d()
+	if camera and camera.has_method("profile_name"):
+		lines.append("Camera: %s  [C]" % camera.call("profile_name"))
+	lines.append("Window: %d×%d (%.2f:1)  viewport %d×%d" % [
+		window_size.x, window_size.y, aspect, size.x, size.y,
+	])
+	lines.append("Display: %s / %s" % [
+		DisplayServer.get_name(),
+		RenderingServer.get_current_rendering_driver_name(),
+	])
+	lines.append("Enter: launch  Backspace: reset")
+	return "\n".join(lines)

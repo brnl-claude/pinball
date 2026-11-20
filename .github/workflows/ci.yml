@@ -52,6 +52,21 @@ jobs:
             exit 1
           fi
 
+      - name: Physics test
+        run: |
+          set -o pipefail
+          ~/godot/godot --headless --fixed-fps 1000 --script res://tests/physics_test.gd 2>&1 | tee physics.log
+          if grep -qE "SCRIPT ERROR|Parse Error|Failed to load script" physics.log; then
+            echo "::error::Script errors found in the logs"
+            exit 1
+          fi
+          {
+            echo '### Physics test'
+            echo '```'
+            grep -vE '^\s*$' physics.log | grep -vE '^Godot Engine' || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Linux export
         run: |
           set -o pipefail
