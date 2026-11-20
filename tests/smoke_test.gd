@@ -15,6 +15,10 @@ func _initialize() -> void:
 	_expect(Engine.physics_ticks_per_second == 1000, "physics must run at 1000 Hz")
 	_expect(ProjectSettings.get_setting("physics/common/physics_interpolation") == true,
 			"physics interpolation must be enabled")
+	# Jolt caps angular velocity at 47 rad/s by default, which limits a rolling
+	# 27 mm ball to ~0.64 m/s. A ball at 20 m/s spins at ~1500 rad/s.
+	_expect(ProjectSettings.get_setting("physics/jolt_physics_3d/limits/max_angular_velocity") >= 2000.0,
+			"Jolt max angular velocity is too low for a rolling pinball")
 
 	var input_actions = load("res://core/input_actions.gd")
 	input_actions.register_defaults()
