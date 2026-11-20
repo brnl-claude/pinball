@@ -320,7 +320,8 @@ points = 1000
 sound = "ramp"
 
 [node name="LeftRampSpinner" type="Area3D" parent="."]
-transform = Transform3D(0.954, 0, -0.3, 0, 1, 0, 0.3, 0, 0.954, -0.148, 0, -0.125)
+position = Vector3(-0.148, 0, -0.125)
+rotation = Vector3(0, 0.305, 0)
 script = ExtResource("19_spinner")
 
 [node name="RightSaucer" type="Node3D" parent="."]
