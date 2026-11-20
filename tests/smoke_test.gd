@@ -119,6 +119,7 @@ func _check_layout_profiles() -> void:
 	settings.call("set_screen_rotation", 0)
 	var aspect_before: float = camera.viewport_aspect()
 	_expect(hud.layout == camera.active_preset().hud_layout, "the HUD follows the camera's layout profile")
+	_test_dmd(hud.dmd)
 	settings.call("set_screen_rotation", 90)
 	var aspect_after: float = camera.viewport_aspect()
 	_expect(is_equal_approx(aspect_after, 1.0 / aspect_before),
@@ -160,6 +161,32 @@ func _check_graphics() -> void:
 	_expect(root.scaling_3d_mode != Viewport.SCALING_3D_MODE_FSR2 and root.scaling_3d_scale == 1.0,
 			"100% renders natively")
 	settings.call("set_render_scale", saved)
+
+
+## The dot-matrix display: 4:1 on screen, a font for every message, and
+## long messages wrapped onto lines that fit.
+func _test_dmd(dmd: Dmd) -> void:
+	if dmd == null:
+		_failures.append("the HUD has no DMD")
+		return
+	var dmd_size := dmd.custom_minimum_size
+	_expect(dmd_size.x > 100.0 and absf(dmd_size.x / dmd_size.y - 4.0) < 0.05,
+			"the DMD is sized at 4:1 (%s)" % dmd_size)
+	for text: String in ["0123456789,", "BONUS 1,200 × 3", "BALL SAVED", "JACKPOT 25,000", "DANGER  DANGER"]:
+		for character in text:
+			if character != " ":
+				_expect(Dmd.GLYPHS.has(character), "the DMD font has '%s'" % character)
+	var image := Image.create(Dmd.COLUMNS, Dmd.ROWS, false, Image.FORMAT_L8)
+	Dmd.paint_text(image, "8", 0, 0, 2, 1.0)
+	var lit := 0
+	for y in Dmd.ROWS:
+		for x in Dmd.COLUMNS:
+			lit += 1 if image.get_pixel(x, y).r > 0.5 else 0
+	_expect(lit == 17 * 4, "an 8 at 2× lights 68 dots (%d)" % lit)
+	var lines := Dmd._wrap("RAMP FRENZY TOTAL 120,000 POINTS", Dmd.COLUMNS)
+	_expect(lines.size() == 2 and Dmd.text_width(lines[0], 1) <= Dmd.COLUMNS,
+			"long DMD messages wrap onto lines that fit (%s)" % lines)
+	print("DMD: %s on screen" % dmd_size)
 
 
 func _expect(condition: bool, message: String) -> void:
