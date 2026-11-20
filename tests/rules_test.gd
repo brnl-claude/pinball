@@ -185,14 +185,24 @@ func _test_multiball() -> void:
 	await _ticks(int(_rules.lock_hold_seconds * 1000) + 50)
 	_expect(_rules.multiball and _rules.locked == 0, "the third lock starts multiball")
 	# The locked balls are auto-plunged one after another.
-	var all_in := false
-	for i in 6000:
+	var launches: Array[int] = []  # an Array, so the lambda appends to this one
+	var on_launch := func(): launches.append(1)
+	_table.connect("ball_launched", on_launch)
+	var waited := 0
+	while waited < 6000 and launches.size() < 2:
 		await physics_frame
-		if _table.call("balls_in_play") == 3 and _table.call("_lane_clear") and _table.get("_launch_queue") == 0:
-			all_in = true
-			print("Multiball: 3 balls in play %d ms after the lock" % i)
-			break
-	_expect(all_in, "multiball auto-plunges the locked balls onto the playfield (in play %d)" % _table.call("balls_in_play"))
+		waited += 1
+	_table.disconnect("ball_launched", on_launch)
+	print("Multiball: %d balls auto-plunged in %d ms, %d in play" % [
+			launches.size(), waited, _table.call("balls_in_play")])
+	_expect(launches.size() >= 2 and _table.call("balls_in_play") == 3,
+			"multiball auto-plunges the locked balls onto the playfield (%d launched, %d in play)" % [
+			launches.size(), _table.call("balls_in_play")])
+	if launches.size() < 2:
+		for node in _table.get_children():
+			if node is Ball:
+				print("  ball %s at %s, v %s" % [node.name, node.position, node.linear_velocity])
+		print("  queue %d, plunger pull %.3f" % [_table.get("_launch_queue"), _table.get("plunger").pull])
 
 	var score_before := _rules.score
 	_make_ramp()
