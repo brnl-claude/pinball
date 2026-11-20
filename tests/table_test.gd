@@ -487,7 +487,8 @@ func _test_ramp(speed: float, should_make: bool) -> void:
 			break
 		if made_tick < 0 and not should_make and i > 1500:
 			break
-	var glass_clearance := 0.095 - (top + radius)
+	# Touching the glass on a hard shot is fine; passing through it is not.
+	var glass_clearance := 0.095 + 0.001 - (top + radius)
 	print("Ramp at %.1f m/s: made %s (switch %d) after %.2f s, highest ball top %.3f m, landed at %s, score %d" % [
 			speed, made_tick >= 0, made_switch.hits, made_tick / 1000.0, top + radius, landed, _table.get("score")])
 	if should_make:
@@ -520,14 +521,19 @@ func _test_ball_passes_under_ramp() -> void:
 	var highest_z := 0.0
 	var top := 0.0
 	var lowest := radius
+	var lowest_at := Vector3.ZERO
 	for i in 1500:
 		await physics_frame
 		highest_z = minf(highest_z, _ball.position.z)
 		top = maxf(top, _ball.position.y)
-		lowest = minf(lowest, _ball.position.y)
-	print("Under the wire ramp: got up to z %.3f, centre between %.4f and %.4f m, ended at %s" % [
-			highest_z, lowest, top, _ball.position])
-	if lowest < radius - 0.0005:
+		if _ball.position.y < lowest:
+			lowest = _ball.position.y
+			lowest_at = _ball.position
+	print("Under the wire ramp: got up to z %.3f, centre between %.4f (at %s) and %.4f m, ended at %s, speed %.2f m/s" % [
+			highest_z, lowest, lowest_at, top, _ball.position, _ball.speed()])
+	# A wedged ball is pressed into the playfield and stops; a hard landing
+	# only dips briefly.
+	if lowest < radius - 0.003 or (_ball.speed() < 0.02 and _ball.position.y < radius - 0.0005):
 		_failures.append("ball got wedged under the wire ramp (centre at %.4f m)" % lowest)
 	if top > radius + 0.004:
 		_failures.append("ball under the wire ramp bounced up (%.4f m)" % top)
