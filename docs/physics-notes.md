@@ -40,6 +40,7 @@ We keep real-world meters (`world_scale = 1.0`). Real scale passes every test, s
 
 Other notes:
 
+- Godot (and its Jolt module) **adds** the bounce of both bodies, clamped to 1. The first flipper rubber test measured 0.93 where the model asked 0.71, because the ball's own bounce (0.3) was added. The flipper therefore subtracts the ball's bounce when it sets its own.
 - Box shapes use a 1 mm collision margin (Godot's default is 4 cm), so thin walls and guides are not rounded off.
 - The ball has `can_sleep = false` and no damping; gravity is applied as a constant force so the table slope lives in `PhysicsTuning`.
 
@@ -70,3 +71,8 @@ The playfield is the physics frame, so a nudge is modelled as the cabinet accele
 - **Tilt bob:** a 15 cm pendulum (period 0.78 s) with 4.5 cm clearance to the ring and a damping of 1/s. It is driven by the shove only, not by the gentle settle back. One shove swings it about 3.7 cm. Shoves in step with its swing build it up: 3 shoves 0.78 s apart touch the ring three times, which is 2 warnings and a tilt. In a simulation of 10 shoves at random 0.2–0.6 s intervals, 60% gave a warning and 16% tilted.
 
 All values are exports on `Cabinet` and will be tuned by feel.
+
+## Flipper refinement (Phase 5b)
+
+- **EOS switch and hold winding:** above 92% of the stroke only the hold winding pulls (500 rad/s² instead of 1600). A ball that hits a raised flipper pushes it back with its impulse, `Δω = (r × F)·Δt / I`, with an effective inertia of 0.004 kg·m² for bat, crank and coil plunger. The hit is found from the ball's change in velocity near the bat, not from the contact event, because Jolt's speculative contacts can resolve a hit a few ticks before the ball touches.
+- **Speed-dependent rubber:** `e = 0.75 / (1 + 0.12 · v)`, which gives 0.71 at 0.5 m/s, 0.61 at 2 m/s and 0.51 at 4 m/s. Each tick the flipper sets its bounce from the nearest ball's approach speed, relative to the bat's own surface speed, so Jolt's solver applies it, including to a ball already resting on the bat.
