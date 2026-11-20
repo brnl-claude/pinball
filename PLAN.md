@@ -2,7 +2,7 @@
 
 Goal: a 3D pinball game in the style of Pinball FX / Zaccaria Pinball, with believable physics (flippers, slingshots, bumpers, nudge/tilt), built on an open source engine. This document picks the engine, explains where pinball physics gets hard, describes the controls, and lays out a phased roadmap to a first playable prototype.
 
-> Status: approved. Phase 0 (project setup) is in progress.
+> Status: approved. Phase 0 is done; Phase 1 (physics sandbox) is in progress.
 
 **Priorities:** (1) realistic physics, (2) realistic graphics, (3) runs smoothly on Linux.
 
@@ -82,7 +82,7 @@ Two options, to be measured in Phase 1:
 1. **Real scale (meters)**: everything is physically correct. Risk: a ball with a 13.5 mm radius is small for physics engines; collision margins and sleep thresholds need to go down.
 2. **Scaled up (e.g. ×10)**: more stable contacts; gravity scales along (×10).
 
-Preference: real scale, provided the Phase 1 tests are stable.
+**Decided (Phase 1): real scale.** It passes all tunneling and rolling tests; scaling up gave no benefit. See [docs/physics-notes.md](docs/physics-notes.md).
 
 ### 3.2 High tick rate and substeps
 
@@ -308,6 +308,6 @@ Tables in Pinball FX and Zaccaria are often based on licensed real machines or b
 ## 9. Open decisions
 
 1. **GDScript or C#?** Proposal: GDScript for the prototype; C# only if we build a custom solver.
-2. **Real scale or scaled up?** Decide after the Phase 1 measurement.
+2. ~~**Real scale or scaled up?**~~ Decided: real scale (see [docs/physics-notes.md](docs/physics-notes.md)).
 3. **Target platform:** Linux PC first (decided), Windows second. Web/mobile later or not at all.
 4. **Theme of the first original table.**
