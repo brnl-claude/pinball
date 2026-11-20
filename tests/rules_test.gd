@@ -225,6 +225,8 @@ func _make_ramp() -> void:
 
 ## Drops the ball into the saucer slowly, so it is captured.
 func _into_saucer() -> void:
+	# The saucer ignores the ball it just let go of for a moment.
+	await _ticks(400)
 	_ball = _table.get("ball")
 	var radius := _ball.tuning.scaled_ball_radius()
 	_ball.reset_to(Transform3D(Basis.IDENTITY, _saucer().global_position + Vector3(0.0, radius, 0.0)))

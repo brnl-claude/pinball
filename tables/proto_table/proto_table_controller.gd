@@ -7,11 +7,12 @@ extends Node3D
 ## The table owns a `Cabinet` for nudging and the tilt bob, and a `Replay`
 ## that records every physics tick (K saves, L plays back).
 ##
-## Multiball: the table has a trough of spare balls (balls out of play are
-## not in the scene tree). `add_ball()` auto-plunges spare balls into play,
-## `lock_ball()` takes a ball out of play (a virtual lock). While more than
-## one ball is in play a drained ball only emits `ball_lost`; `ball_drained`
-## means the last ball is gone. `ball` is always one of the balls in play.
+## Multiball: `add_ball()` auto-plunges extra balls through the shooter
+## lane, `lock_ball()` takes a ball out of play (a virtual lock). While more
+## than one ball is in play a drained ball only emits `ball_lost`;
+## `ball_drained` means the last ball is gone. The main ball (`ball`, from
+## the scene) always stays in play: when it leaves play while extra balls
+## remain, it takes over the state of an extra ball, which is removed.
 
 signal ball_drained
 signal ball_launched
@@ -26,8 +27,8 @@ signal tilted
 @export var respawn_delay := 1.0
 ## Balls with x above this are in the shooter lane.
 @export var shooter_lane_x := 0.2
-## Spare balls in the trough for multiball, besides the main ball.
-@export var spare_balls := 3
+## Most balls in play at once (the main ball plus extras).
+@export var max_balls := 4
 ## Settle time in the shooter lane before an auto-plunge (s).
 @export var auto_plunge_delay := 0.3
 
@@ -42,10 +43,8 @@ var replay: Replay
 var drained_count := 0
 ## Raw points from all parts since the table loaded (rules keep the game score).
 var score := 0
-## Every ball the table owns; balls[0] is the main ball from the scene.
-var balls: Array[Ball] = []
-
 var _in_play: Array[Ball] = []
+var _extra_count := 0
 ## Per ball: whether it was in the shooter lane last tick.
 var _in_lane := {}
 var _launch_queue := 0
@@ -64,26 +63,13 @@ func _ready() -> void:
 	replay.name = "Replay"
 	replay.table = self
 	add_child(replay)
-	balls.append(ball)
-	for i in spare_balls:
-		var spare := Ball.new()
-		spare.name = "Ball%d" % (i + 2)
-		spare.tuning = ball.tuning
-		balls.append(spare)
-	# Deferred: balls leave the tree on a drain, which must not happen while
+	# Deferred: balls leave the table on a drain, which must not happen while
 	# the physics server is flushing area queries.
 	drain.ball_drained.connect(_on_ball_drained, CONNECT_DEFERRED)
 	for node in find_children("*", "", true, false):
 		if node.has_signal("scored"):
 			node.connect("scored", _on_scored.bind(node))
 	serve_ball()
-
-
-func _notification(what: int) -> void:
-	if what == NOTIFICATION_PREDELETE:
-		for spare in balls:
-			if is_instance_valid(spare) and not spare.is_inside_tree():
-				spare.free()
 
 
 func _physics_process(delta: float) -> void:
@@ -101,11 +87,9 @@ func _physics_process(delta: float) -> void:
 func serve_ball() -> void:
 	_launch_queue = 0
 	_auto_plunging = null
-	for b in balls.slice(1):
-		_to_trough(b)
-	ball = balls[0]
-	if not ball.is_inside_tree():
-		add_child(ball)
+	for b in _in_play.duplicate():
+		if b != ball:
+			_remove_extra(b)
 	_in_play = [ball]
 	_place_in_lane(ball)
 
@@ -115,26 +99,19 @@ func balls_in_play() -> int:
 	return _in_play.size() + _launch_queue
 
 
-## Auto-plunges `count` spare balls into play, one at a time through the
-## shooter lane. Returns how many could be taken from the trough.
+## Auto-plunges `count` extra balls into play, one at a time through the
+## shooter lane, up to `max_balls` in play. Returns how many were added.
 func add_ball(count := 1) -> int:
-	var available := 0
-	for b in balls:
-		if not b.is_inside_tree():
-			available += 1
-	count = mini(count, available - _launch_queue)
+	count = clampi(count, 0, max_balls - balls_in_play())
 	_launch_queue += count
 	return count
 
 
-## Takes a ball out of play into the trough (a virtual ball lock).
+## Takes a ball out of play (a virtual ball lock). The last ball in play
+## stays where it is; serve it again with `serve_ball()`.
 func lock_ball(locked: Ball) -> void:
-	if locked == null or not _in_play.has(locked):
-		return
-	_in_play.erase(locked)
-	_to_trough(locked)
-	if ball == locked and not _in_play.is_empty():
-		ball = _in_play[0]
+	if locked != null and _in_play.has(locked) and _in_play.size() > 1:
+		_take_out_of_play(locked)
 
 
 func _place_in_lane(b: Ball) -> void:
@@ -145,11 +122,35 @@ func _place_in_lane(b: Ball) -> void:
 	_in_lane[b] = true
 
 
-func _to_trough(b: Ball) -> void:
+## Removes a ball from play while others remain. The main ball is kept:
+## it takes over the position and motion of an extra ball instead.
+func _take_out_of_play(b: Ball) -> void:
+	if b != ball:
+		_remove_extra(b)
+		return
+	var other: Ball = null
+	for candidate in _in_play:
+		if candidate != ball:
+			other = candidate
+			break
+	ball.freeze = false
+	ball.reset_to(other.global_transform)
+	ball.linear_velocity = other.linear_velocity
+	ball.angular_velocity = other.angular_velocity
+	drain.rearm(ball)
+	_in_lane[ball] = _in_lane.get(other, false)
+	if _auto_plunging == other:
+		_auto_plunging = ball
+	_remove_extra(other)
+
+
+func _remove_extra(b: Ball) -> void:
+	_in_play.erase(b)
 	_in_lane.erase(b)
-	if b.is_inside_tree():
-		b.freeze = false
-		remove_child(b)
+	drain.rearm(b)
+	if _auto_plunging == b:
+		_auto_plunging = null
+	b.queue_free()
 
 
 func _lane_clear() -> bool:
@@ -172,16 +173,22 @@ func _step_auto_plunge(delta: float) -> void:
 		return
 	if _launch_queue <= 0 or not _lane_clear() or plunger.pull > 0.0:
 		return
-	for b in balls:
-		if not b.is_inside_tree():
-			_launch_queue -= 1
-			add_child(b)
-			_in_play.append(b)
-			_place_in_lane(b)
-			_auto_plunging = b
-			_auto_plunge_left = auto_plunge_delay
-			return
-	_launch_queue = 0
+	_launch_queue -= 1
+	if not _in_play.has(ball):
+		_in_play.append(ball)
+		_place_in_lane(ball)
+		_auto_plunging = ball
+		_auto_plunge_left = auto_plunge_delay
+		return
+	_extra_count += 1
+	var extra := Ball.new()
+	extra.name = "ExtraBall%d" % _extra_count
+	extra.tuning = ball.tuning
+	add_child(extra)
+	_in_play.append(extra)
+	_place_in_lane(extra)
+	_auto_plunging = extra
+	_auto_plunge_left = auto_plunge_delay
 
 
 func set_flippers_enabled(value: bool) -> void:
@@ -230,10 +237,13 @@ func _on_ball_drained(drained: Ball) -> void:
 	if not _in_play.has(drained):
 		return
 	if balls_in_play() > 1:
-		_in_play.erase(drained)
-		_to_trough(drained)
-		if ball == drained and not _in_play.is_empty():
-			ball = _in_play[0]
+		if _in_play.size() > 1:
+			_take_out_of_play(drained)
+		elif drained != ball:
+			_remove_extra(drained)
+		else:
+			# Only queued balls are left: the main ball becomes the next one.
+			_in_play.erase(ball)
 		ball_lost.emit(balls_in_play())
 		return
 	drained_count += 1
