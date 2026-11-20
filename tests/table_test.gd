@@ -1,5 +1,6 @@
 extends SceneTree
-## Phase 2 test suite for flippers, plunger and drain on the prototype table.
+## Test suite for the prototype table's parts: flippers, plunger, drain,
+## slingshots, bumpers, targets, rollovers, and the cabinet (nudge and tilt).
 ## Run with a fixed timestep (one frame = one physics tick):
 ##
 ##   godot --headless --fixed-fps 1000 --script res://tests/table_test.gd
@@ -12,6 +13,7 @@ var _ball: Ball
 var _left: Flipper
 var _right: Flipper
 var _plunger: Plunger
+var _cabinet: Cabinet
 
 
 func _initialize() -> void:
@@ -30,6 +32,9 @@ func _run() -> void:
 	await _test_drop_target_bank()
 	await _test_rollover()
 	await _test_shooter_lane_hits_nothing()
+	await _test_nudge_free_ball()
+	await _test_nudge_cradled_ball()
+	await _test_tilt()
 
 	print("")
 	if _failures.is_empty():
@@ -57,6 +62,8 @@ func _load_table() -> void:
 		flipper.use_input = false
 		flipper.energized = false
 	_plunger.use_input = false
+	_cabinet = _table.get("cabinet")
+	_cabinet.use_input = false
 	await _ticks(50)
 
 
@@ -267,3 +274,77 @@ func _test_shooter_lane_hits_nothing() -> void:
 			dropped_in_lane, score_in_lane])
 	if dropped_in_lane or score_in_lane > 0:
 		_failures.append("parts behind the shooter lane wall react to the ball in the lane")
+
+
+## A shove from the left jolts the cabinet right; a free ball lags behind,
+## so relative to the table it moves left. The cabinet settles back.
+func _test_nudge_free_ball() -> void:
+	await _load_table()
+	var radius := _ball.tuning.scaled_ball_radius()
+	_place_ball(Vector3(-0.0275, radius, 0.05))
+	await _ticks(5)
+	var vx0 := _ball.linear_velocity.x
+	_cabinet.nudge(Vector3.RIGHT)
+	var lowest := 0.0
+	for i in 60:
+		await physics_frame
+		lowest = minf(lowest, _ball.linear_velocity.x - vx0)
+	await _ticks(1500)
+	print("Nudge: free ball jolts %.2f m/s sideways, cabinet back to %.2f mm, warnings %d" % [
+			lowest, _cabinet.offset.length() * 1000.0, _cabinet.warnings])
+	if lowest > -0.15:
+		_failures.append("a nudge barely moves a free ball (%.2f m/s)" % lowest)
+	if _cabinet.offset.length() > 0.001:
+		_failures.append("the cabinet does not settle after a nudge")
+	if _cabinet.warnings > 0:
+		_failures.append("a single nudge gives a tilt warning")
+
+
+## A ball cradled on a raised flipper is carried by the flipper when the
+## cabinet is shoved forward, and leaves it up the table as the cabinet settles.
+func _test_nudge_cradled_ball() -> void:
+	await _load_table()
+	_left.energized = true
+	await _ticks(100)
+	_place_ball(_beside_flipper(_left, 0.85, 0.004))
+	await _ticks(1500)
+	var z0 := _ball.position.z
+	_cabinet.nudge(Vector3.FORWARD)
+	var lowest_vz := 0.0
+	for i in 300:
+		await physics_frame
+		lowest_vz = minf(lowest_vz, _ball.linear_velocity.z)
+	print("Nudge: cradled ball leaves the flipper at %.2f m/s up the table (moved %.1f mm)" % [
+			-lowest_vz, (z0 - _ball.position.z) * 1000.0])
+	if lowest_vz > -0.1:
+		_failures.append("a forward nudge does not move a cradled ball (%.2f m/s)" % lowest_vz)
+	_left.energized = false
+
+
+## Nudging in step with the tilt bob builds up its swing: warnings first,
+## then a tilt that kills the flippers and coils. reset_tilt restores them.
+func _test_tilt() -> void:
+	await _load_table()
+	_ball.freeze = true
+	var period_ticks := int(TAU * sqrt(_cabinet.bob_length / 9.81) * Engine.physics_ticks_per_second)
+	# Lambdas capture locals by value, so count in an array.
+	var warnings_seen := [0]
+	_cabinet.tilt_warning.connect(func(_left_count: int): warnings_seen[0] += 1)
+	var nudges := 0
+	while not _cabinet.is_tilted and nudges < 12:
+		_cabinet.nudge(Vector3.RIGHT)
+		nudges += 1
+		await _ticks(period_ticks)
+	var sling: Slingshot = _table.get_node("LeftSlingshot")
+	var bumper: PopBumper = _table.get_node("PopBumper1")
+	print("Tilt: %d warning(s), tilted after %d nudges in step with the bob" % [warnings_seen[0], nudges])
+	if not _cabinet.is_tilted:
+		_failures.append("nudging in step with the bob never tilts")
+	if warnings_seen[0] != _cabinet.warnings_allowed:
+		_failures.append("expected %d tilt warnings, got %d" % [_cabinet.warnings_allowed, warnings_seen[0]])
+	if _left.enabled or sling.enabled or bumper.enabled:
+		_failures.append("a tilt leaves flippers or coils working")
+	_table.call("reset_tilt")
+	if _cabinet.is_tilted or not (_left.enabled and sling.enabled and bumper.enabled):
+		_failures.append("reset_tilt does not restore the machine")
+	_ball.freeze = false

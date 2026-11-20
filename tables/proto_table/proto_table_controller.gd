@@ -4,11 +4,14 @@ extends Node3D
 ## `scored` signal with the part that scored. Game rules live separately in
 ## `GameRules`; without rules attached the table simply re-serves the ball
 ## after a drain (sandbox play). Backspace re-serves the ball by hand.
+## The table owns a `Cabinet` for nudging and the tilt bob.
 
 signal ball_drained
 signal ball_launched
 signal score_changed(score: int)
 signal part_scored(points: int, part: Node)
+signal tilt_warning(warnings_left: int)
+signal tilted
 
 ## Seconds before re-serving after a drain; negative disables auto re-serve.
 @export var respawn_delay := 1.0
@@ -21,6 +24,7 @@ signal part_scored(points: int, part: Node)
 @onready var left_flipper: Flipper = $LeftFlipper
 @onready var right_flipper: Flipper = $RightFlipper
 
+var cabinet: Cabinet
 var drained_count := 0
 ## Raw points from all parts since the table loaded (rules keep the game score).
 var score := 0
@@ -30,6 +34,11 @@ var _in_shooter_lane := true
 
 func _ready() -> void:
 	add_to_group("table")
+	cabinet = Cabinet.new()
+	cabinet.name = "Cabinet"
+	add_child(cabinet)
+	cabinet.tilt_warning.connect(tilt_warning.emit)
+	cabinet.tilted.connect(_on_tilted)
 	drain.ball_drained.connect(_on_ball_drained)
 	for node in find_children("*", "", true, false):
 		if node.has_signal("scored"):
@@ -58,6 +67,19 @@ func set_flippers_enabled(value: bool) -> void:
 	right_flipper.enabled = value
 
 
+## Flippers, slingshots and pop bumpers: everything a tilt switches off.
+func set_solenoids_enabled(value: bool) -> void:
+	set_flippers_enabled(value)
+	for type: Variant in [Slingshot, PopBumper]:
+		for part in parts_of(type):
+			part.set("enabled", value)
+
+
+func reset_tilt() -> void:
+	cabinet.reset_tilt()
+	set_solenoids_enabled(true)
+
+
 ## All parts of a given class, e.g. `parts_of(Rollover)`.
 func parts_of(type: Variant) -> Array[Node]:
 	var result: Array[Node] = []
@@ -73,8 +95,15 @@ func _on_scored(points: int, part: Node) -> void:
 	part_scored.emit(points, part)
 
 
+func _on_tilted() -> void:
+	set_solenoids_enabled(false)
+	tilted.emit()
+
+
 func _on_ball_drained(_drained: Ball) -> void:
 	drained_count += 1
 	ball_drained.emit()
 	if respawn_delay >= 0.0:
+		if cabinet.is_tilted:
+			reset_tilt()
 		get_tree().create_timer(respawn_delay, true, true).timeout.connect(serve_ball)

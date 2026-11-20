@@ -44,6 +44,13 @@ func build_text() -> String:
 	var balls := get_tree().get_nodes_in_group("balls")
 	if not balls.is_empty():
 		lines.append("Ball speed: %.2f m/s" % (balls[0] as RigidBody3D).linear_velocity.length())
+	var cabinet := get_tree().get_first_node_in_group("cabinet")
+	if cabinet:
+		var bob: Vector3 = cabinet.get("bob")
+		lines.append("Tilt bob: %.1f / %.1f mm  warnings %d%s" % [
+			bob.length() * 1000.0, float(cabinet.get("ring_clearance")) * 1000.0,
+			cabinet.get("warnings"), "  TILT" if cabinet.get("is_tilted") else "",
+		])
 	var camera := get_viewport().get_camera_3d()
 	if camera and camera.has_method("profile_name"):
 		lines.append("Camera: %s  [C]" % camera.call("profile_name"))
@@ -54,5 +61,5 @@ func build_text() -> String:
 		DisplayServer.get_name(),
 		RenderingServer.get_current_rendering_driver_name(),
 	])
-	lines.append("Shift: flippers  Enter: plunger  Backspace: re-serve")
+	lines.append("Shift: flippers  Enter: plunger  Z / slash / Space: nudge  Backspace: re-serve")
 	return "\n".join(lines)

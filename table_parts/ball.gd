@@ -4,7 +4,8 @@ extends RigidBody3D
 ## PhysicsTuning resource.
 ##
 ## Gravity is applied as a constant force (gravity_scale = 0), so the table
-## slope lives in the tuning and nudging can later add to it per ball.
+## slope lives in the tuning, and the cabinet's acceleration during a nudge
+## adds to it (see `set_frame_acceleration`).
 
 const TABLE_LAYER := 1
 const BALL_LAYER := 2
@@ -21,6 +22,8 @@ var _mesh_node: MeshInstance3D
 var _touching := {}
 ## Parts touched for the first time in the last physics step.
 var _new_hits: Array[Object] = []
+## Acceleration of the playfield (the physics frame), e.g. during a nudge.
+var _frame_acceleration := Vector3.ZERO
 
 
 func _init() -> void:
@@ -80,7 +83,7 @@ func _physics_process(_delta: float) -> void:
 func apply_tuning() -> void:
 	mass = tuning.ball_mass
 	gravity_scale = 0.0
-	constant_force = mass * tuning.gravity_vector()
+	_update_constant_force()
 
 	var material := PhysicsMaterial.new()
 	material.friction = tuning.ball_friction
@@ -107,6 +110,19 @@ func apply_tuning() -> void:
 	chrome.roughness = 0.08
 	mesh.material = chrome
 	_mesh_node.mesh = mesh
+
+
+## The playfield accelerates (a nudge); the ball feels the inertial force
+## -m·a on top of gravity.
+func set_frame_acceleration(value: Vector3) -> void:
+	if value == _frame_acceleration:
+		return
+	_frame_acceleration = value
+	_update_constant_force()
+
+
+func _update_constant_force() -> void:
+	constant_force = mass * (tuning.gravity_vector() - _frame_acceleration)
 
 
 func speed() -> float:

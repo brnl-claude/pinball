@@ -37,7 +37,9 @@ func _process(delta: float) -> void:
 			GameRules.State.PLAYING, GameRules.State.BALL_ENDING:
 				var info := "BALL %d / %d    BONUS %d×" % [
 					rules.ball_number, rules.balls_per_game, rules.multiplier]
-				if rules.ball_save_left > 0.0:
+				if rules.tilted:
+					info += "    TILT"
+				elif rules.ball_save_left > 0.0:
 					info += "    BALL SAVE"
 				_info_label.text = info
 				_high_score_label.visible = false

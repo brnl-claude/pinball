@@ -60,3 +60,13 @@ Tuning notes:
 
 - Flipper shots are on the soft side; real machines reach roughly 4–6 m/s off the sweet spot. Raise `up_max_speed` or the rubber `bounce` when the first ramp needs it, or move to the custom contact impulse planned for Phase 5.
 - The drain reports each ball once until it is served again, because a drained ball can bounce in and out of the drain area.
+
+## Nudge and tilt (Phase 5)
+
+The playfield is the physics frame, so a nudge is modelled as the cabinet accelerating underneath the ball (`table_parts/cabinet.gd`). The ball feels the inertial force `-m·a` on top of gravity:
+
+- **Shove:** 15 m/s² for 20 ms, so the cabinet reaches 0.3 m/s. It then settles back on its legs as a damped spring (4 Hz, damping ratio 0.7) and moves about 6 mm in total. The camera stays put, so the table jolts on screen.
+- **Effect on the ball:** a free ball lags behind the shove and catches up again. A ball resting on a flipper or post is carried by it and leaves it as the cabinet settles. That is the useful part of a real nudge.
+- **Tilt bob:** a 15 cm pendulum (period 0.78 s) with 4.5 cm clearance to the ring and a damping of 1/s. It is driven by the shove only, not by the gentle settle back. One shove swings it about 3.7 cm. Shoves in step with its swing build it up: 3 shoves 0.78 s apart touch the ring three times, which is 2 warnings and a tilt. In a simulation of 10 shoves at random 0.2–0.6 s intervals, 60% gave a warning and 16% tilted.
+
+All values are exports on `Cabinet` and will be tuned by feel.

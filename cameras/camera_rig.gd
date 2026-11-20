@@ -7,6 +7,9 @@ extends Camera3D
 ## finds the closest distance at which the whole table fits in view.
 ## Cameras are deliberately decoupled from game logic, so a VR rig can be
 ## added later without touching the table or the rules.
+##
+## The camera is the player's head: when a nudge shoves the cabinet, the
+## camera stays put, so the table visibly jolts in the view.
 
 enum Profile { AUTO, PORTRAIT, LANDSCAPE, TOP_DOWN }
 
@@ -19,8 +22,12 @@ const PROFILE_NAMES := ["auto", "portrait", "landscape", "top-down"]
 @export_range(10.0, 90.0) var landscape_pitch_degrees := 38.0
 ## Extra space around the table, as a fraction of the view.
 @export_range(1.0, 1.5) var framing_margin := 1.04
+## How much of the cabinet's nudge motion shows on screen (1 = real).
+@export_range(0.0, 3.0) var nudge_view_scale := 1.0
 
 var profile := Profile.AUTO
+
+var _framing := Transform3D.IDENTITY
 
 
 func _ready() -> void:
@@ -32,6 +39,14 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("camera_next"):
 		profile = ((profile + 1) % Profile.size()) as Profile
 		update_framing()
+
+
+func _physics_process(_delta: float) -> void:
+	var cabinet := get_tree().get_first_node_in_group("cabinet")
+	if cabinet == null:
+		return
+	var offset: Vector3 = cabinet.get("offset")
+	global_transform = _framing.translated(-offset * nudge_view_scale)
 
 
 func viewport_aspect() -> float:
@@ -61,9 +76,10 @@ func pitch_for(p: Profile) -> float:
 
 
 func update_framing() -> void:
-	global_transform = compute_framing(
+	_framing = compute_framing(
 			pitch_for(active_profile()), fov, viewport_aspect(),
 			table_center, table_size, framing_margin)
+	global_transform = _framing
 	reset_physics_interpolation()
 
 
