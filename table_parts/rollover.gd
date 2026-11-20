@@ -50,8 +50,7 @@ func _build() -> void:
 	mesh.top_radius = 0.009
 	mesh.bottom_radius = 0.009
 	mesh.height = 0.001
-	_insert_material = StandardMaterial3D.new()
-	_insert_material.albedo_color = lamp_color.darkened(0.6)
+	_insert_material = TableMaterials.make(TableMaterials.Finish.PLASTIC, lamp_color.darkened(0.6))
 	mesh.material = _insert_material
 	insert.mesh = mesh
 	insert.position.y = 0.0006

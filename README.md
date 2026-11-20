@@ -28,6 +28,7 @@ godot --path . --headless --fixed-fps 1000 --script res://tests/rules_test.gd   
 | Pause | Esc | Back |
 | Switch camera profile (auto, portrait, landscape, ultrawide, top-down) | C | – |
 | Rotate screen 0/90/180/270° (monitor turned upright in a cabinet) | F8 | – |
+| Render scale: native, or FSR 2 at 77/67/59/50% | F7 | – |
 | Re-serve ball | Backspace | – |
 | Debug overlay | F3 | – |
 
@@ -51,6 +52,15 @@ The camera picks a layout profile from the aspect ratio:
 | Top-down | manual (C) | straight down | bar at the top |
 
 F8 rotates the whole picture for a landscape monitor turned upright, without telling the OS: use 90° when the monitor's top edge points left and 270° when it points right. The setting is saved in `user://settings.cfg`, and the profile is then picked from the rotated aspect ratio. Presets are `CameraPreset` resources, so a table can bring its own.
+
+## Graphics
+
+- PBR finishes from `TableMaterials`: clear-coated playfield, wood-grain cabinet walls, polished steel guides, matte rubbers and glossy plastic inserts and caps. Textures are procedural for now, so there are no asset files yet.
+- A chrome ball that mirrors a box-projected reflection probe over the table.
+- Lit inserts and flashing caps glow above the HDR threshold, so they bloom.
+- Warm and cool fill lights, SSAO, SSIL and SSR.
+- F7 lowers the render scale with AMD FSR 2 upscaling when 7680×2160 at 120 fps needs headroom. The setting is saved in `user://settings.cfg`.
+- Baked lightmaps (LightmapGI) wait until the table geometry is final, because baking needs the editor and a GPU.
 
 ## Settings (Phase 0)
 

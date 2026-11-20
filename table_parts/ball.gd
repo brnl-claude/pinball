@@ -104,11 +104,9 @@ func apply_tuning() -> void:
 	var mesh := SphereMesh.new()
 	mesh.radius = radius
 	mesh.height = radius * 2.0
-	var chrome := StandardMaterial3D.new()
-	chrome.albedo_color = Color(0.85, 0.85, 0.88)
-	chrome.metallic = 1.0
-	chrome.roughness = 0.08
-	mesh.material = chrome
+	mesh.radial_segments = 48
+	mesh.rings = 24
+	mesh.material = TableMaterials.chrome()
 	_mesh_node.mesh = mesh
 
 

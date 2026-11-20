@@ -59,9 +59,12 @@ func build_text() -> String:
 	lines.append("Window: %d×%d (%.2f:1)  viewport %d×%d" % [
 		window_size.x, window_size.y, aspect, size.x, size.y,
 	])
+	var settings := get_node_or_null("/root/DisplaySettings")
+	if settings:
+		lines.append("Render: %s  [F7]" % settings.call("render_scale_name"))
 	lines.append("Display: %s / %s" % [
 		DisplayServer.get_name(),
 		RenderingServer.get_current_rendering_driver_name(),
 	])
-	lines.append("Shift: flippers  Enter: plunger  Z / slash / Space: nudge  Backspace: re-serve  F8: rotate screen")
+	lines.append("Shift: flippers  Enter: plunger  Z / slash / Space: nudge  Backspace: re-serve  F7: render scale  F8: rotate screen")
 	return "\n".join(lines)
