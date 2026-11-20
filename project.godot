@@ -30,16 +30,14 @@ display_server/driver.linuxbsd="wayland"
 
 [physics]
 
-3d/physics_engine="Jolt Physics"
 common/physics_ticks_per_second=1000
 common/max_physics_steps_per_frame=32
-common/physics_interpolation=true
-jolt_physics_3d/limits/max_angular_velocity=3000.0
+3d/physics_engine="Jolt Physics"
 jolt_physics_3d/simulation/penetration_slop=0.002
 jolt_physics_3d/simulation/bounce_velocity_threshold=0.2
+jolt_physics_3d/limits/max_angular_velocity=3000.0
+common/physics_interpolation=true
 
 [rendering]
 
-renderer/rendering_method="forward_plus"
-rendering_device/driver.linuxbsd="vulkan"
 anti_aliasing/quality/msaa_3d=2
