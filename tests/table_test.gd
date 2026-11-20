@@ -594,9 +594,10 @@ func _test_spinner() -> void:
 	await _load_table()
 	var spinner: Spinner = _table.get_node("LeftRampSpinner")
 	var radius := _ball.tuning.scaled_ball_radius()
-	_place_ball(Vector3(spinner.position.x, radius, spinner.position.z + 0.06))
-	_ball.linear_velocity = Vector3(0.0, 0.0, -2.0)
-	_ball.angular_velocity = Vector3(-2.0 / radius, 0.0, 0.0)
+	var lane := -spinner.global_basis.z.normalized()
+	_place_ball(Vector3(spinner.position.x, radius, spinner.position.z) - lane * 0.06)
+	_ball.linear_velocity = lane * 2.0
+	_ball.angular_velocity = Vector3.UP.cross(lane) * (2.0 / radius)
 	await _ticks(3000)
 	var revolutions := spinner.revolutions
 	await _ticks(7000)
@@ -631,7 +632,7 @@ func _test_top_left_corner_drains_into_lanes() -> void:
 func _test_ramp_from_right_flipper() -> void:
 	var made := PackedStringArray()
 	var report := PackedStringArray()
-	for delay_ms in range(0, 260, 10):
+	for delay_ms in range(100, 400, 10):
 		await _load_table()
 		var radius := _ball.tuning.scaled_ball_radius()
 		var made_switch: BallSwitch = _table.get_node("LeftRampMade")
