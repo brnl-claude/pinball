@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3]
+[gd_scene load_steps=19 format=3]
 
 [ext_resource type="Script" path="res://tables/proto_table/proto_table_controller.gd" id="1_ctrl"]
 [ext_resource type="Script" path="res://table_parts/wall.gd" id="2_wall"]
@@ -14,6 +14,9 @@
 [ext_resource type="Script" path="res://table_parts/drop_target.gd" id="12_drop"]
 [ext_resource type="Script" path="res://table_parts/drop_target_bank.gd" id="13_bank"]
 [ext_resource type="Script" path="res://table_parts/rollover.gd" id="14_rollover"]
+[ext_resource type="Script" path="res://table_parts/ramp.gd" id="15_ramp"]
+[ext_resource type="Script" path="res://table_parts/wire_ramp.gd" id="16_wire"]
+[ext_resource type="Script" path="res://table_parts/ball_switch.gd" id="17_switch"]
 
 [node name="ProtoTable" type="Node3D"]
 script = ExtResource("1_ctrl")
@@ -27,35 +30,35 @@ finish = 1
 bounce = 0.0
 
 [node name="WallLeft" type="StaticBody3D" parent="."]
-position = Vector3(-0.265, 0.03, 0)
+position = Vector3(-0.265, 0.0475, 0)
 script = ExtResource("2_wall")
-size = Vector3(0.02, 0.06, 1.11)
+size = Vector3(0.02, 0.095, 1.11)
 color = Color(0.35, 0.22, 0.12, 1)
 finish = 2
 
 [node name="WallRight" type="StaticBody3D" parent="."]
-position = Vector3(0.265, 0.03, 0)
+position = Vector3(0.265, 0.0475, 0)
 script = ExtResource("2_wall")
-size = Vector3(0.02, 0.06, 1.11)
+size = Vector3(0.02, 0.095, 1.11)
 color = Color(0.35, 0.22, 0.12, 1)
 finish = 2
 
 [node name="WallTop" type="StaticBody3D" parent="."]
-position = Vector3(0, 0.03, -0.545)
+position = Vector3(0, 0.0475, -0.545)
 script = ExtResource("2_wall")
-size = Vector3(0.55, 0.06, 0.02)
+size = Vector3(0.55, 0.095, 0.02)
 color = Color(0.35, 0.22, 0.12, 1)
 finish = 2
 
 [node name="WallBottom" type="StaticBody3D" parent="."]
-position = Vector3(0, 0.03, 0.545)
+position = Vector3(0, 0.0475, 0.545)
 script = ExtResource("2_wall")
-size = Vector3(0.55, 0.06, 0.02)
+size = Vector3(0.55, 0.095, 0.02)
 color = Color(0.35, 0.22, 0.12, 1)
 finish = 2
 
 [node name="Glass" type="StaticBody3D" parent="."]
-position = Vector3(0, 0.0625, 0)
+position = Vector3(0, 0.0975, 0)
 script = ExtResource("2_wall")
 size = Vector3(0.55, 0.005, 1.11)
 show_mesh = false
@@ -288,6 +291,21 @@ script = ExtResource("14_rollover")
 [node name="RightOutlaneRollover" type="Area3D" parent="."]
 position = Vector3(0.1825, 0, 0.24)
 script = ExtResource("14_rollover")
+
+[node name="LeftRamp" type="StaticBody3D" parent="."]
+script = ExtResource("15_ramp")
+points = PackedVector3Array(-0.17, -0.001, -0.06, -0.17, 0.008, -0.12, -0.17, 0.026, -0.2, -0.17, 0.042, -0.28, -0.17, 0.05, -0.35, -0.179, 0.053, -0.372, -0.201, 0.054, -0.381, -0.223, 0.054, -0.372, -0.232, 0.054, -0.35, -0.232, 0.053, -0.32)
+
+[node name="LeftRampReturn" type="StaticBody3D" parent="."]
+script = ExtResource("16_wire")
+points = PackedVector3Array(-0.232, 0.051, -0.33, -0.232, 0.049, -0.3, -0.233, 0.045, -0.2, -0.233, 0.04, -0.08, -0.232, 0.036, 0, -0.225, 0.026, 0.06, -0.21, 0.012, 0.11, -0.202, 0.001, 0.15, -0.2, -0.001, 0.165)
+
+[node name="LeftRampMade" type="Area3D" parent="."]
+position = Vector3(-0.233, 0.058, -0.15)
+script = ExtResource("17_switch")
+size = Vector3(0.03, 0.03, 0.01)
+points = 1000
+sound = "ramp"
 
 [node name="LeftFlipper" type="AnimatableBody3D" parent="."]
 position = Vector3(-0.1225, 0, 0.4)
