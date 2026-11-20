@@ -10,8 +10,12 @@ signal scored(points: int)
 @export_range(-1, 1, 2) var kick_side := 1
 ## Speed added to the ball along the normal (m/s).
 @export var kick_speed := 2.2
-## Minimum ball speed that triggers the switch (m/s).
-@export var min_hit_speed := 0.1
+## Minimum ball speed into the rubber face that triggers the switch (m/s);
+## a ball grazing along the face does not.
+@export var min_hit_speed := 0.15
+## Only the middle part of the rubber, this share of its length, deflects
+## enough to close the switch. Hits near the corner posts just bounce.
+@export_range(0.1, 1.0) var active_fraction := 0.6
 @export var cooldown := 0.12
 @export var points := 10
 @export var lamp_color := Color(1.0, 0.85, 0.4)
@@ -25,7 +29,7 @@ func on_ball_hit(ball: Ball) -> void:
 	if not enabled:
 		return
 	var now := Time.get_ticks_msec()
-	if ball.linear_velocity.length() < min_hit_speed or now - _last_kick_ms < cooldown * 1000.0:
+	if now - _last_kick_ms < cooldown * 1000.0 or not is_face_hit(ball):
 		return
 	_last_kick_ms = now
 	var n := normal_2d() * kick_side
@@ -37,3 +41,28 @@ func on_ball_hit(ball: Ball) -> void:
 	scored.emit(points)
 	SoundFx.play("slingshot")
 	LampFx.flash(self, surface_material, lamp_color)
+
+
+## True when the ball hit the rubber face from the playfield side, in the
+## middle part of the rubber, moving into it (or bouncing off it) fast
+## enough. Contact with the ends or a grazing touch is not a hit.
+func is_face_hit(ball: Ball) -> bool:
+	var parent := get_parent_node_3d()
+	var local := parent.to_local(ball.global_position) if parent else ball.global_position
+	var p := Vector2(local.x, local.z)
+	var along := end - start
+	var length := along.length()
+	if length < 0.001:
+		return false
+	var t := (p - start).dot(along) / (length * length)
+	if absf(t - 0.5) > active_fraction * 0.5:
+		return false
+	var n := normal_2d() * kick_side
+	if (p - start).dot(n) <= 0.0:
+		return false
+	var velocity := ball.linear_velocity
+	if parent:
+		velocity = parent.global_basis.inverse() * velocity
+	# The contact is reported a tick late, so the ball may already be
+	# bouncing away: count speed along the normal either way.
+	return absf(Vector2(velocity.x, velocity.z).dot(n)) >= min_hit_speed

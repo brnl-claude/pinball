@@ -30,6 +30,7 @@ func _run() -> void:
 	await _test_cradle()
 	await _test_outlane_drains()
 	await _test_slingshot()
+	await _test_slingshot_ends_do_not_kick()
 	await _test_pop_bumper()
 	await _test_drop_target_bank()
 	await _test_rollover()
@@ -671,3 +672,24 @@ func _test_ramp_from_right_flipper() -> void:
 	print("Right flipper to left ramp: made at %s ms\n  %s" % [", ".join(made), "\n  ".join(report)])
 	if made.size() < 2:
 		_failures.append("the left ramp cannot be made from the right flipper (made at %d timings)" % made.size())
+
+
+## Bram: the slingshots also kicked when the ball touched them near the top
+## or bottom post. Only the middle of the rubber face may fire.
+func _test_slingshot_ends_do_not_kick() -> void:
+	for fraction: float in [0.08, 0.92]:
+		await _load_table()
+		var sling: Slingshot = _table.get_node("LeftSlingshot")
+		var n2 := sling.normal_2d() * sling.kick_side
+		var normal := Vector3(n2.x, 0.0, n2.y)
+		var point := sling.start.lerp(sling.end, fraction)
+		var face := Vector3(point.x, 0.0, point.y)
+		var radius := _ball.tuning.scaled_ball_radius()
+		_fire_at(face + normal * (sling.thickness * 0.5 + radius), -normal * 0.6)
+		var best := 0.0
+		for i in 150:
+			await physics_frame
+			best = maxf(best, _ball.linear_velocity.dot(normal))
+		print("Slingshot end at %.2f: peak speed away %.2f m/s, score %d" % [fraction, best, _table.get("score")])
+		if _table.get("score") > 0 or best > 1.0:
+			_failures.append("slingshot kicked on a hit near its end (%.2f along)" % fraction)
