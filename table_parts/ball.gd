@@ -24,6 +24,9 @@ func _init() -> void:
 	linear_damp = 0.0
 	angular_damp_mode = RigidBody3D.DAMP_MODE_REPLACE
 	angular_damp = 0.0
+	# Report contacts so table parts (slingshots, bumpers, targets) can react.
+	contact_monitor = true
+	max_contacts_reported = 4
 
 
 func _ready() -> void:
@@ -31,6 +34,14 @@ func _ready() -> void:
 		tuning = PhysicsTuning.new()
 	apply_tuning()
 	add_to_group("balls")
+	body_entered.connect(_on_body_entered)
+
+
+## Tells a table part that the ball hit it. Parts opt in by implementing
+## `on_ball_hit(ball: Ball)`.
+func _on_body_entered(body: Node) -> void:
+	if body.has_method("on_ball_hit"):
+		body.call("on_ball_hit", self)
 
 
 func apply_tuning() -> void:

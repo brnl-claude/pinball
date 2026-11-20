@@ -30,6 +30,7 @@ func _on_body_entered(body: Node3D) -> void:
 	if body is Ball and not _drained_balls.has(body):
 		_drained_balls[body] = true
 		ball_drained.emit(body)
+		SoundFx.play("drain")
 
 
 ## Allows a ball to drain again, e.g. after it was served back into play.
