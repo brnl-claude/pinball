@@ -43,6 +43,8 @@ func _run() -> void:
 	await _test_ramp(3.0, true)
 	await _test_ramp(4.0, true)
 	await _test_ball_passes_under_ramp()
+	await _test_saucer()
+	await _test_spinner()
 
 	print("")
 	if _failures.is_empty():
@@ -539,3 +541,58 @@ func _test_ball_passes_under_ramp() -> void:
 		_failures.append("ball under the wire ramp bounced up (%.4f m)" % top)
 	if _ball.position.z < highest_z + 0.1:
 		_failures.append("ball under the wire ramp did not roll back down (%s)" % _ball.position)
+
+
+## A slow ball settles in the saucer, is held, and is kicked out toward the
+## bumpers; a fast ball rolls over it.
+func _test_saucer() -> void:
+	await _load_table()
+	var saucer: Saucer = _table.get_node("RightSaucer")
+	var radius := _ball.tuning.scaled_ball_radius()
+	_place_ball(saucer.position + Vector3(0.04, radius, 0.0))
+	_ball.linear_velocity = Vector3(-0.6, 0.0, 0.0)
+	_ball.angular_velocity = Vector3(0.0, 0.0, 0.6 / radius)
+	await _ticks(300)
+	var held := saucer.held == _ball
+	var held_at := _ball.position
+	var ejected_velocity := Vector3.ZERO
+	for i in 1500:
+		await physics_frame
+		if saucer.held == null and not _ball.freeze:
+			ejected_velocity = _ball.linear_velocity
+			break
+	print("Saucer: held %s at %s, kicked out at %s m/s, score %d" % [
+			held, held_at, ejected_velocity, _table.get("score")])
+	if not held:
+		_failures.append("a slow ball did not settle in the saucer")
+	if ejected_velocity.length() < 1.2 or ejected_velocity.x > -0.5:
+		_failures.append("saucer did not kick the ball out toward the bumpers (%s)" % ejected_velocity)
+
+	await _load_table()
+	saucer = _table.get_node("RightSaucer")
+	_place_ball(saucer.position + Vector3(0.05, radius, 0.0))
+	_ball.linear_velocity = Vector3(-2.5, 0.0, 0.0)
+	await _ticks(200)
+	print("Saucer: a fast ball was captured %d time(s)" % saucer.captures)
+	if saucer.captures != 0:
+		_failures.append("a fast ball got caught in the saucer")
+
+
+## A ball through the spinner sets it spinning; it scores per revolution and
+## stops after a while, and the ball keeps most of its speed.
+func _test_spinner() -> void:
+	await _load_table()
+	var spinner: Spinner = _table.get_node("LeftRampSpinner")
+	var radius := _ball.tuning.scaled_ball_radius()
+	_place_ball(Vector3(spinner.position.x, radius, spinner.position.z + 0.06))
+	_ball.linear_velocity = Vector3(0.0, 0.0, -2.0)
+	_ball.angular_velocity = Vector3(-2.0 / radius, 0.0, 0.0)
+	await _ticks(3000)
+	var revolutions := spinner.revolutions
+	await _ticks(7000)
+	print("Spinner: %d revolutions after 3 s, %d in total, still spinning %s, score %d" % [
+			revolutions, spinner.revolutions, spinner.spin != 0.0, _table.get("score")])
+	if revolutions < 5 or revolutions > 80:
+		_failures.append("spinner made %d revolutions for a 2 m/s ball" % revolutions)
+	if spinner.spin != 0.0:
+		_failures.append("spinner never stopped")
