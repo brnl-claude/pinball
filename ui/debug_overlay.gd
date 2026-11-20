@@ -51,5 +51,5 @@ func build_text() -> String:
 		DisplayServer.get_name(),
 		RenderingServer.get_current_rendering_driver_name(),
 	])
-	lines.append("Enter: launch  Backspace: reset")
+	lines.append("Shift: flippers  Enter: plunger  Backspace: re-serve")
 	return "\n".join(lines)
