@@ -184,7 +184,7 @@ func _test_flipper_restitution() -> void:
 			slow, fast, _left.restitution_at(0.5), _left.restitution_at(4.0)])
 	if slow < fast + 0.1:
 		_failures.append("flipper restitution does not drop with impact speed (%.2f vs %.2f)" % [slow, fast])
-	if fast < 0.3 or fast > 0.85:
+	if fast < 0.3 or fast > 0.65:
 		_failures.append("flipper restitution at 4 m/s out of range (%.2f)" % fast)
 
 

@@ -13,7 +13,8 @@ extends AnimatableBody3D
 ## Like a real flipper, the strong power winding only drives the stroke. Near
 ## the end of the stroke the EOS switch opens and the weaker hold winding
 ## takes over, so a hard hit on a raised flipper pushes it back a little
-## before the hold winding brings it up again.
+## before the coil brings it up again. The push comes from the ball's change
+## in velocity and an effective inertia of bat, crank and coil plunger.
 ##
 ## The rubber's restitution depends on the impact speed: slow balls bounce
 ## lively, fast balls are damped. Every tick the flipper looks at the nearest
@@ -69,6 +70,10 @@ const SEGMENTS := 16
 ## Effective moment of inertia of bat, crank and coil plunger (kg·m²); sets
 ## how far a ball hit pushes the bat back.
 @export var effective_inertia := 0.004
+## A ball closer than this to the rubber (m) counts as touching for recoil.
+@export var recoil_contact_distance := 0.004
+## Smallest velocity change away from the bat (m/s) that counts as a hit.
+@export var recoil_min_speed_change := 0.05
 
 @export_group("Rubber")
 @export_range(0.0, 1.0) var friction := 0.6:
@@ -100,6 +105,8 @@ var _was_energized := false
 var _shape_node: CollisionShape3D
 var _mesh_node: MeshInstance3D
 var _physics_material: PhysicsMaterial
+## Each ball's velocity at the previous tick, by instance id.
+var _last_ball_velocity := {}
 
 
 func _ready() -> void:
@@ -117,6 +124,7 @@ func _physics_process(delta: float) -> void:
 	if energized and not _was_energized:
 		SoundFx.play("flipper")
 	_was_energized = energized
+	_apply_ball_impulses(delta)
 	step(delta)
 	_update_restitution()
 
@@ -170,50 +178,88 @@ func _closest_on_bat(point: Vector3) -> Array:
 	return [axis_point, lerpf(base_radius, tip_radius, t)]
 
 
+## Where a ball is relative to the bat: its gap to the rubber (m), the
+## contact normal (pointing from the bat to the ball) and the contact point.
+func _contact_with(ball: RigidBody3D) -> Dictionary:
+	var closest: Array = _closest_on_bat(ball.global_position)
+	var axis_point: Vector3 = closest[0]
+	var bat_radius: float = closest[1]
+	var offset := ball.global_position - axis_point
+	offset.y = 0.0
+	var distance := maxf(offset.length(), 0.0001)
+	var tuning: Variant = ball.get("tuning")
+	var radius: float = tuning.scaled_ball_radius() if tuning else 0.0135
+	var normal := offset / distance
+	return {
+		"gap": distance - bat_radius - radius,
+		"normal": normal,
+		"point": axis_point + normal * bat_radius,
+	}
+
+
+## A ball that was pushed away from the bat in the last physics step hit it;
+## the reaction pushes the bat back (against the hold winding when it is up).
+## This looks at the ball's change in velocity rather than at the contact
+## event, because Jolt's speculative contacts can resolve a hit before the
+## ball actually touches.
+func _apply_ball_impulses(delta: float) -> void:
+	var seen := {}
+	for node in get_tree().get_nodes_in_group("balls"):
+		var ball := node as RigidBody3D
+		if ball == null:
+			continue
+		var id := ball.get_instance_id()
+		seen[id] = true
+		var velocity := ball.linear_velocity
+		var last: Variant = _last_ball_velocity.get(id)
+		_last_ball_velocity[id] = velocity
+		if last == null or stroke_angle <= 0.0:
+			continue
+		var contact := _contact_with(ball)
+		if float(contact["gap"]) > recoil_contact_distance:
+			continue
+		# Velocity change from contacts only (gravity and nudges removed).
+		var change: Vector3 = velocity - last - ball.constant_force / ball.mass * delta
+		change.y = 0.0
+		var normal: Vector3 = contact["normal"]
+		if change.dot(normal) < recoil_min_speed_change:
+			continue
+		var r: Vector3 = contact["point"] - global_position
+		r.y = 0.0
+		# The ball pushes the bat with -m·Δv; torque around Y is (r × F).y.
+		var force := -ball.mass * change / delta
+		var torque_y := r.z * force.x - r.x * force.z
+		angular_speed += direction_sign() * torque_y * delta / effective_inertia
+	for id: int in _last_ball_velocity.keys():
+		if not seen.has(id):
+			_last_ball_velocity.erase(id)
+
+
 ## Sets the rubber's bounce for the nearest approaching ball, so Jolt's
-## contact solver uses the restitution that fits its impact speed.
+## contact solver uses the restitution that fits its impact speed. Godot
+## adds the bounce of both bodies, so the ball's own bounce is subtracted.
 func _update_restitution() -> void:
 	if _physics_material == null:
 		return
 	var best_gap := INF
 	var impact_speed := 0.0
+	var ball_bounce := 0.0
 	for node in get_tree().get_nodes_in_group("balls"):
 		var ball := node as RigidBody3D
 		if ball == null:
 			continue
-		var closest: Array = _closest_on_bat(ball.global_position)
-		var axis_point: Vector3 = closest[0]
-		var bat_radius: float = closest[1]
-		var offset := ball.global_position - axis_point
-		offset.y = 0.0
-		var distance := offset.length()
-		var radius: float = ball.get("tuning").scaled_ball_radius() if ball.get("tuning") else 0.0135
-		var gap := distance - bat_radius - radius
-		if gap > restitution_lookahead or gap >= best_gap or distance < 0.0001:
+		var contact := _contact_with(ball)
+		var gap: float = contact["gap"]
+		if gap > restitution_lookahead or gap >= best_gap:
 			continue
 		best_gap = gap
-		var normal := offset / distance
-		var contact := axis_point + normal * bat_radius
-		var relative := ball.linear_velocity - surface_velocity_at(contact)
+		var normal: Vector3 = contact["normal"]
+		var relative := ball.linear_velocity - surface_velocity_at(contact["point"])
 		impact_speed = maxf(-relative.dot(normal), 0.0)
-	var target := restitution_at(impact_speed)
+		ball_bounce = ball.physics_material_override.bounce if ball.physics_material_override else 0.0
+	var target := maxf(restitution_at(impact_speed) - ball_bounce, 0.0)
 	if not is_equal_approx(_physics_material.bounce, target):
 		_physics_material.bounce = target
-
-
-## Called by the ball when it starts touching the bat. A hit on a raised
-## bat pushes it back against the weaker hold winding.
-func on_ball_hit(ball: Ball) -> void:
-	if stroke_angle <= 0.0:
-		return
-	var impulse := ball.mass * (ball.linear_velocity - ball.impact_velocity)
-	impulse.y = 0.0
-	var r := ball.global_position - global_position
-	r.y = 0.0
-	# The ball pushes the bat with -impulse; torque around Y is (r × F).y.
-	var force := -impulse
-	var torque_y := r.z * force.x - r.x * force.z
-	angular_speed += direction_sign() * torque_y / effective_inertia
 
 
 func is_fully_up() -> bool:
