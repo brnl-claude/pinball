@@ -25,6 +25,8 @@ func _process(delta: float) -> void:
 	_frame_ms = lerpf(_frame_ms, delta * 1000.0, 0.1)
 	if visible:
 		_label.text = build_text()
+		transform = ScreenRotation.canvas_transform(
+				get_viewport().get_visible_rect().size, ScreenRotation.current(get_tree()))
 
 
 func build_text() -> String:
@@ -61,5 +63,5 @@ func build_text() -> String:
 		DisplayServer.get_name(),
 		RenderingServer.get_current_rendering_driver_name(),
 	])
-	lines.append("Shift: flippers  Enter: plunger  Z / slash / Space: nudge  Backspace: re-serve")
+	lines.append("Shift: flippers  Enter: plunger  Z / slash / Space: nudge  Backspace: re-serve  F8: rotate screen")
 	return "\n".join(lines)

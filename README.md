@@ -26,7 +26,8 @@ godot --path . --headless --fixed-fps 1000 --script res://tests/rules_test.gd   
 | Nudge left / right / up | Z / `/` / Space | – |
 | Start game | 1 | Start |
 | Pause | Esc | Back |
-| Switch camera | C | – |
+| Switch camera profile (auto, portrait, landscape, ultrawide, top-down) | C | – |
+| Rotate screen 0/90/180/270° (monitor turned upright in a cabinet) | F8 | – |
 | Re-serve ball | Backspace | – |
 | Debug overlay | F3 | – |
 
@@ -37,6 +38,19 @@ Press **1** to start a game: 3 balls, an 8-second ball save after each launch, a
 **Nudging and tilt:** Z, `/` and Space shove the cabinet from the left, from the right and from the front. The ball reacts to the cabinet's motion, and a cradled ball can be bumped off a flipper. A tilt bob swings with every shove: the first two times it touches its ring you get a DANGER warning, the third time the ball tilts. A tilted ball loses its flippers, coils, scoring, ball save and bonus; the next ball starts normally. Press F3 to see the bob's swing.
 
 The top 5 scores are saved in `user://high_scores.cfg`.
+
+## Screen layouts
+
+The camera picks a layout profile from the aspect ratio:
+
+| Profile | Aspect ratio | Camera | Score |
+|---|---|---|---|
+| Portrait / cabinet | below 1:1 (9:16, 3:4) | steep, 62° | bar at the top |
+| Landscape | 1:1 to 2.6:1 (16:9, 21:9) | tilted, 38° | column right of the table |
+| Ultrawide | 2.6:1 and wider (32:9) | tilted, 40° | score left, info right |
+| Top-down | manual (C) | straight down | bar at the top |
+
+F8 rotates the whole picture for a landscape monitor turned upright, without telling the OS: use 90° when the monitor's top edge points left and 270° when it points right. The setting is saved in `user://settings.cfg`, and the profile is then picked from the rotated aspect ratio. Presets are `CameraPreset` resources, so a table can bring its own.
 
 ## Settings (Phase 0)
 

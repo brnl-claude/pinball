@@ -32,6 +32,7 @@ const ACTIONS := {
 	"reset_ball": [{"key": KEY_BACKSPACE}],
 	"camera_next": [{"key": KEY_C}],
 	"toggle_debug": [{"key": KEY_F3}],
+	"rotate_screen": [{"key": KEY_F8}],
 }
 
 
