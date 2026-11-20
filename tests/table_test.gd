@@ -480,7 +480,7 @@ func _test_ramp(speed: float, should_make: bool) -> void:
 	axis = axis.normalized()
 	_place_ball(Vector3(entrance.x, radius, entrance.z) - axis * 0.05)
 	_ball.linear_velocity = axis * speed
-	_ball.angular_velocity = Vector3.UP.cross(axis) * (-speed / radius)
+	_ball.angular_velocity = Vector3.UP.cross(axis) * (speed / radius)
 	var top := 0.0
 	var landed := Vector3.INF
 	var made_tick := -1
