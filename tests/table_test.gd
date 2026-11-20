@@ -647,6 +647,8 @@ func _test_ramp_from_right_flipper() -> void:
 		_right.energized = true
 		var crossing := Vector3.INF
 		var crossing_speed := 0.0
+		var crossing_spin := 0.0
+		var furthest := Vector3(0.0, 0.0, INF)
 		for i in 2500:
 			await physics_frame
 			if i == 400:
@@ -654,12 +656,17 @@ func _test_ramp_from_right_flipper() -> void:
 			if crossing == Vector3.INF and _ball.position.z < -0.03:
 				crossing = _ball.position
 				crossing_speed = _ball.speed()
+				# 1.0 = rolling, 0.0 = sliding without spin.
+				crossing_spin = _ball.angular_velocity.length() * radius / maxf(crossing_speed, 0.001)
+			if crossing != Vector3.INF and _ball.position.z < furthest.z:
+				furthest = _ball.position
 			if made_switch.hits > 0:
 				break
 		if made_switch.hits > 0:
 			made.append(str(delay_ms))
 		report.append("%d ms after the ball reached the flipper: %s" % [delay_ms, "MADE" if made_switch.hits > 0 else (
-				"crossed x %.3f at %.1f m/s" % [crossing.x, crossing_speed] if crossing != Vector3.INF
+				"crossed x %.3f at %.1f m/s (spin/roll %.2f), got to %s" % [crossing.x, crossing_speed,
+						crossing_spin, furthest] if crossing != Vector3.INF
 				else "did not get up")])
 	print("Right flipper to left ramp: made at %s ms\n  %s" % [", ".join(made), "\n  ".join(report)])
 	if made.size() < 2:
