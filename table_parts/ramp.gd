@@ -18,12 +18,29 @@ extends StaticBody3D
 	set(value):
 		width = value
 		_rebuild()
+## Width of the mouth (m). The ramp narrows from this to `width` over
+## `entry_length`, so shots need not be perfectly aimed to get in.
+@export var entry_width := 0.075:
+	set(value):
+		entry_width = value
+		_rebuild()
+@export var entry_length := 0.1:
+	set(value):
+		entry_length = value
+		_rebuild()
 ## Wall height above the floor (m). In tight turns the ball's spin rubs it
 ## up the outer wall; walls that reach to within a ball radius of the glass
 ## keep it in.
 @export var wall_height := 0.022:
 	set(value):
 		wall_height = value
+		_rebuild()
+## Width of the rolled lip along the top of each wall, pointing inward (m).
+## With the gap between the lips narrower than the ball, a ball whose spin
+## rubs it up the wall in a turn cannot jump out. 0 leaves the top open.
+@export var lip := 0.008:
+	set(value):
+		lip = value
 		_rebuild()
 ## Thickness of the plastic, for the visible mesh only (m).
 @export var thickness := 0.003:
@@ -64,6 +81,19 @@ func _ready() -> void:
 	_rebuild()
 
 
+## Extra half-width at each sample: the mouth narrowing to `width`.
+func widening(samples: PackedVector3Array) -> PackedFloat32Array:
+	var result := PackedFloat32Array()
+	var distance := 0.0
+	var extra := maxf(entry_width - width, 0.0) * 0.5
+	for i in samples.size():
+		if i > 0:
+			distance += samples[i].distance_to(samples[i - 1])
+		var t := smoothstep(0.0, entry_length, distance) if entry_length > 0.0 else 1.0
+		result.append(extra * (1.0 - t))
+	return result
+
+
 ## The sampled path (ball bottom) through the ramp, in local coordinates.
 func path() -> PackedVector3Array:
 	return RampPath.sample(points, step)
@@ -81,12 +111,18 @@ func _rebuild() -> void:
 	var samples := path()
 	var basis_list := RampPath.frames(samples)
 	var half := width * 0.5
+	var widen := widening(samples)
 
 	var faces := PackedVector3Array()
-	faces.append_array(RampPath.ribbon_faces(samples, basis_list, Vector2(-half, 0.0), Vector2(half, 0.0)))
-	faces.append_array(RampPath.ribbon_faces(samples, basis_list, Vector2(-half, 0.0), Vector2(-half, wall_height)))
-	faces.append_array(RampPath.ribbon_faces(samples, basis_list, Vector2(half, 0.0), Vector2(half, wall_height)))
-	var skirts := _skirt_faces(samples, basis_list)
+	faces.append_array(RampPath.ribbon_faces(samples, basis_list, Vector2(-half, 0.0), Vector2(half, 0.0), widen))
+	faces.append_array(RampPath.ribbon_faces(samples, basis_list, Vector2(-half, 0.0), Vector2(-half, wall_height), widen))
+	faces.append_array(RampPath.ribbon_faces(samples, basis_list, Vector2(half, 0.0), Vector2(half, wall_height), widen))
+	if lip > 0.0:
+		faces.append_array(RampPath.ribbon_faces(samples, basis_list, Vector2(-half, wall_height),
+				Vector2(-half + lip, wall_height), widen))
+		faces.append_array(RampPath.ribbon_faces(samples, basis_list, Vector2(half, wall_height),
+				Vector2(half - lip, wall_height), widen))
+	var skirts := _skirt_faces(samples, basis_list, widen)
 	faces.append_array(skirts)
 	var shape := ConcavePolygonShape3D.new()
 	shape.backface_collision = true
@@ -100,14 +136,22 @@ func _rebuild() -> void:
 
 	# A U-shaped slab of plastic.
 	var outer := half + thickness
+	var inner := half - maxf(lip, 0.0)
+	var top := wall_height + (thickness if lip > 0.0 else 0.0)
 	var profile := PackedVector2Array([
 		Vector2(-half, wall_height), Vector2(-half, 0.0), Vector2(half, 0.0), Vector2(half, wall_height),
-		Vector2(outer, wall_height), Vector2(outer, -thickness), Vector2(-outer, -thickness),
-		Vector2(-outer, wall_height),
+		Vector2(outer, top), Vector2(outer, -thickness), Vector2(-outer, -thickness), Vector2(-outer, top),
 	])
+	if lip > 0.0:
+		profile = PackedVector2Array([
+			Vector2(-inner, wall_height), Vector2(-half, wall_height), Vector2(-half, 0.0),
+			Vector2(half, 0.0), Vector2(half, wall_height), Vector2(inner, wall_height),
+			Vector2(inner, top), Vector2(outer, top), Vector2(outer, -thickness),
+			Vector2(-outer, -thickness), Vector2(-outer, top), Vector2(-inner, top),
+		])
 	var tool := SurfaceTool.new()
 	tool.begin(Mesh.PRIMITIVE_TRIANGLES)
-	RampPath.extrude(tool, samples, basis_list, profile, true, false)
+	RampPath.extrude(tool, samples, basis_list, profile, true, false, Vector2.ZERO, widen)
 	for i in range(0, skirts.size(), 3):
 		var normal := (skirts[i + 1] - skirts[i]).cross(skirts[i + 2] - skirts[i]).normalized()
 		RampPath._triangle(tool, [skirts[i], skirts[i + 1], skirts[i + 2]], [normal, normal, normal])
@@ -119,7 +163,8 @@ func _rebuild() -> void:
 
 ## Vertical side walls from the floor edges down to the playfield (local
 ## y = 0) where the floor is low, and a back wall across where they end.
-func _skirt_faces(samples: PackedVector3Array, basis_list: Array[Basis]) -> PackedVector3Array:
+func _skirt_faces(samples: PackedVector3Array, basis_list: Array[Basis],
+		widen: PackedFloat32Array) -> PackedVector3Array:
 	var faces := PackedVector3Array()
 	if skirt_height <= 0.0:
 		return faces
@@ -130,15 +175,15 @@ func _skirt_faces(samples: PackedVector3Array, basis_list: Array[Basis]) -> Pack
 			break
 		last = i + 1
 		for side: float in [-half, half]:
-			var a := samples[i] + basis_list[i].x * side
-			var b := samples[i + 1] + basis_list[i + 1].x * side
+			var a := samples[i] + basis_list[i].x * (side + signf(side) * widen[i])
+			var b := samples[i + 1] + basis_list[i + 1].x * (side + signf(side) * widen[i + 1])
 			var a0 := Vector3(a.x, 0.0, a.z)
 			var b0 := Vector3(b.x, 0.0, b.z)
 			for vertex: Vector3 in [a, b, b0, a, b0, a0]:
 				faces.append(vertex)
 	if last > 0:
-		var left := samples[last] - basis_list[last].x * half
-		var right := samples[last] + basis_list[last].x * half
+		var left := samples[last] - basis_list[last].x * (half + widen[last])
+		var right := samples[last] + basis_list[last].x * (half + widen[last])
 		var left0 := Vector3(left.x, 0.0, left.z)
 		var right0 := Vector3(right.x, 0.0, right.z)
 		for vertex: Vector3 in [left, right, right0, left, right0, left0]:

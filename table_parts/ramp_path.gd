@@ -77,9 +77,13 @@ static func length(samples: PackedVector3Array) -> float:
 ## vertex normal points away from `profile_center` (tubes); otherwise each
 ## profile edge is shaded flat (plastic walls). Triangles are wound so the
 ## outward side is the front face.
+##
+## `widen`, if given, has one value per sample: profile points move that much
+## further out sideways (away from the centre line) at that sample, for
+## ramps whose width changes along the path.
 static func extrude(tool: SurfaceTool, samples: PackedVector3Array, basis_list: Array[Basis],
 		profile: PackedVector2Array, closed: bool, smooth: bool,
-		profile_center := Vector2.ZERO) -> void:
+		profile_center := Vector2.ZERO, widen := PackedFloat32Array()) -> void:
 	var edge_count := profile.size() if closed else profile.size() - 1
 	for i in samples.size() - 1:
 		var b0 := basis_list[i]
@@ -96,10 +100,12 @@ static func extrude(tool: SurfaceTool, samples: PackedVector3Array, basis_list: 
 				var d := c - a
 				n_a = Vector2(-d.y, d.x).normalized()
 				n_c = n_a
-			var v00 := samples[i] + b0.x * a.x + b0.y * a.y
-			var v01 := samples[i] + b0.x * c.x + b0.y * c.y
-			var v10 := samples[i + 1] + b1.x * a.x + b1.y * a.y
-			var v11 := samples[i + 1] + b1.x * c.x + b1.y * c.y
+			var w0 := widen[i] if i < widen.size() else 0.0
+			var w1 := widen[i + 1] if i + 1 < widen.size() else 0.0
+			var v00 := samples[i] + b0.x * _wider(a.x, w0) + b0.y * a.y
+			var v01 := samples[i] + b0.x * _wider(c.x, w0) + b0.y * c.y
+			var v10 := samples[i + 1] + b1.x * _wider(a.x, w1) + b1.y * a.y
+			var v11 := samples[i + 1] + b1.x * _wider(c.x, w1) + b1.y * c.y
 			var m00 := (b0.x * n_a.x + b0.y * n_a.y).normalized()
 			var m01 := (b0.x * n_c.x + b0.y * n_c.y).normalized()
 			var m10 := (b1.x * n_a.x + b1.y * n_a.y).normalized()
@@ -122,15 +128,17 @@ static func _triangle(tool: SurfaceTool, vertices: Array, normals: Array) -> voi
 ## Triangles (three vertices each) of a ribbon between two profile points,
 ## swept along the path: collision faces for ConcavePolygonShape3D.
 static func ribbon_faces(samples: PackedVector3Array, basis_list: Array[Basis],
-		a: Vector2, c: Vector2) -> PackedVector3Array:
+		a: Vector2, c: Vector2, widen := PackedFloat32Array()) -> PackedVector3Array:
 	var faces := PackedVector3Array()
 	for i in samples.size() - 1:
 		var b0 := basis_list[i]
 		var b1 := basis_list[i + 1]
-		var v00 := samples[i] + b0.x * a.x + b0.y * a.y
-		var v01 := samples[i] + b0.x * c.x + b0.y * c.y
-		var v10 := samples[i + 1] + b1.x * a.x + b1.y * a.y
-		var v11 := samples[i + 1] + b1.x * c.x + b1.y * c.y
+		var w0 := widen[i] if i < widen.size() else 0.0
+		var w1 := widen[i + 1] if i + 1 < widen.size() else 0.0
+		var v00 := samples[i] + b0.x * _wider(a.x, w0) + b0.y * a.y
+		var v01 := samples[i] + b0.x * _wider(c.x, w0) + b0.y * c.y
+		var v10 := samples[i + 1] + b1.x * _wider(a.x, w1) + b1.y * a.y
+		var v11 := samples[i + 1] + b1.x * _wider(c.x, w1) + b1.y * c.y
 		for vertex: Vector3 in [v00, v10, v11, v00, v11, v01]:
 			faces.append(vertex)
 	return faces
@@ -143,3 +151,7 @@ static func circle(radius: float, segments: int, center := Vector2.ZERO) -> Pack
 		var angle := TAU * k / segments
 		points.append(center + Vector2(cos(angle), sin(angle)) * radius)
 	return points
+
+
+static func _wider(x: float, extra: float) -> float:
+	return x + signf(x) * extra

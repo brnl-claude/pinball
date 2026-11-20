@@ -43,6 +43,10 @@ func _run() -> void:
 	await _test_ramp(3.0, true)
 	await _test_ramp(4.0, true)
 	await _test_ball_passes_under_ramp()
+	await _test_ramp_from_right_flipper()
+	await _test_top_left_corner_drains_into_lanes()
+	await _test_saucer()
+	await _test_spinner()
 
 	print("")
 	if _failures.is_empty():
@@ -471,15 +475,21 @@ func _test_ramp(speed: float, should_make: bool) -> void:
 	var made_switch: BallSwitch = _table.get_node("LeftRampMade")
 	var radius := _ball.tuning.scaled_ball_radius()
 	var entrance := ramp.points[0]
-	_place_ball(Vector3(entrance.x, radius, entrance.z + 0.05))
-	_ball.linear_velocity = Vector3(0.0, 0.0, -speed)
-	_ball.angular_velocity = Vector3(-speed / radius, 0.0, 0.0)
+	var axis := ramp.points[1] - entrance
+	axis.y = 0.0
+	axis = axis.normalized()
+	_place_ball(Vector3(entrance.x, radius, entrance.z) - axis * 0.05)
+	_ball.linear_velocity = axis * speed
+	_ball.angular_velocity = Vector3.UP.cross(axis) * (speed / radius)
 	var top := 0.0
 	var landed := Vector3.INF
 	var made_tick := -1
+	var trace := PackedStringArray()
 	for i in 4000:
 		await physics_frame
 		top = maxf(top, _ball.position.y)
+		if i % 50 == 0 and i <= 1000:
+			trace.append("%d:(%.3f,%.3f,%.3f)" % [i, _ball.position.x, _ball.position.y, _ball.position.z])
 		if made_tick < 0 and made_switch.hits > 0:
 			made_tick = i
 		if made_tick >= 0 and _ball.position.z > 0.1 and _ball.position.y < radius + 0.001:
@@ -491,6 +501,8 @@ func _test_ramp(speed: float, should_make: bool) -> void:
 	var glass_clearance := 0.095 + 0.001 - (top + radius)
 	print("Ramp at %.1f m/s: made %s (switch %d) after %.2f s, highest ball top %.3f m, landed at %s, score %d" % [
 			speed, made_tick >= 0, made_switch.hits, made_tick / 1000.0, top + radius, landed, _table.get("score")])
+	if should_make and made_tick < 0:
+		print("  trace: ", " ".join(trace))
 	if should_make:
 		if made_tick < 0:
 			_failures.append("ramp shot at %.1f m/s did not make the ramp" % speed)
@@ -539,3 +551,123 @@ func _test_ball_passes_under_ramp() -> void:
 		_failures.append("ball under the wire ramp bounced up (%.4f m)" % top)
 	if _ball.position.z < highest_z + 0.1:
 		_failures.append("ball under the wire ramp did not roll back down (%s)" % _ball.position)
+
+
+## A slow ball settles in the saucer, is held, and is kicked out toward the
+## bumpers; a fast ball rolls over it.
+func _test_saucer() -> void:
+	await _load_table()
+	var saucer: Saucer = _table.get_node("RightSaucer")
+	var radius := _ball.tuning.scaled_ball_radius()
+	_place_ball(saucer.position + Vector3(0.04, radius, 0.0))
+	_ball.linear_velocity = Vector3(-0.6, 0.0, 0.0)
+	_ball.angular_velocity = Vector3(0.0, 0.0, 0.6 / radius)
+	await _ticks(300)
+	var held := saucer.held == _ball
+	var held_at := _ball.position
+	var ejected_velocity := Vector3.ZERO
+	for i in 1500:
+		await physics_frame
+		if saucer.held == null and not _ball.freeze:
+			ejected_velocity = _ball.linear_velocity
+			break
+	print("Saucer: held %s at %s, kicked out at %s m/s, score %d" % [
+			held, held_at, ejected_velocity, _table.get("score")])
+	if not held:
+		_failures.append("a slow ball did not settle in the saucer")
+	if ejected_velocity.length() < 1.2 or ejected_velocity.x > -0.5:
+		_failures.append("saucer did not kick the ball out toward the bumpers (%s)" % ejected_velocity)
+
+	await _load_table()
+	saucer = _table.get_node("RightSaucer")
+	_place_ball(saucer.position + Vector3(0.05, radius, 0.0))
+	_ball.linear_velocity = Vector3(-2.5, 0.0, 0.0)
+	await _ticks(200)
+	print("Saucer: a fast ball was captured %d time(s)" % saucer.captures)
+	if saucer.captures != 0:
+		_failures.append("a fast ball got caught in the saucer")
+
+
+## A ball through the spinner sets it spinning; it scores per revolution and
+## stops after a while, and the ball keeps most of its speed.
+func _test_spinner() -> void:
+	await _load_table()
+	var spinner: Spinner = _table.get_node("LeftRampSpinner")
+	var radius := _ball.tuning.scaled_ball_radius()
+	var lane := -spinner.global_basis.z.normalized()
+	_place_ball(Vector3(spinner.position.x, radius, spinner.position.z) - lane * 0.06)
+	_ball.linear_velocity = lane * 2.0
+	_ball.angular_velocity = Vector3.UP.cross(lane) * (2.0 / radius)
+	await _ticks(3000)
+	var revolutions := spinner.revolutions
+	await _ticks(7000)
+	print("Spinner: %d revolutions after 3 s, %d in total, still spinning %s, score %d" % [
+			revolutions, spinner.revolutions, spinner.spin != 0.0, _table.get("score")])
+	if revolutions < 5 or revolutions > 80:
+		_failures.append("spinner made %d revolutions for a 2 m/s ball" % revolutions)
+	if spinner.spin != 0.0:
+		_failures.append("spinner never stopped")
+
+
+## Nothing may trap a ball above the ramp's hairpin: a ball dropped in the
+## top left corner rolls down into the top lanes.
+func _test_top_left_corner_drains_into_lanes() -> void:
+	await _load_table()
+	var radius := _ball.tuning.scaled_ball_radius()
+	_place_ball(Vector3(-0.15, radius, -0.49))
+	var escaped_at := Vector3.INF
+	for i in 2500:
+		await physics_frame
+		if _ball.position.x > -0.12 or _ball.position.z > -0.36:
+			escaped_at = _ball.position
+			break
+	print("Top left corner: ball got out at %s" % escaped_at)
+	if escaped_at == Vector3.INF:
+		_failures.append("a ball in the top left corner got stuck at %s" % _ball.position)
+
+
+## The left ramp must be makeable from the right flipper the way a player
+## shoots: a ball rolls down the right inlane onto the flipper and the
+## player times the flip. Sweeps the timing and needs a window that works.
+func _test_ramp_from_right_flipper() -> void:
+	var made := PackedStringArray()
+	var report := PackedStringArray()
+	for delay_ms in range(100, 400, 10):
+		await _load_table()
+		var radius := _ball.tuning.scaled_ball_radius()
+		var made_switch: BallSwitch = _table.get_node("LeftRampMade")
+		_place_ball(Vector3(0.144, radius, 0.26))
+		_ball.linear_velocity = Vector3(0.0, 0.0, 0.3)
+		# The delay counts from when the ball reaches the flipper's base.
+		for i in 2000:
+			await physics_frame
+			if _ball.position.z > 0.37:
+				break
+		await _ticks(delay_ms)
+		_right.energized = true
+		var crossing := Vector3.INF
+		var crossing_speed := 0.0
+		var crossing_spin := 0.0
+		var furthest := Vector3(0.0, 0.0, INF)
+		for i in 2500:
+			await physics_frame
+			if i == 400:
+				_right.energized = false
+			if crossing == Vector3.INF and _ball.position.z < -0.03:
+				crossing = _ball.position
+				crossing_speed = _ball.speed()
+				# 1.0 = rolling, 0.0 = sliding without spin.
+				crossing_spin = _ball.angular_velocity.length() * radius / maxf(crossing_speed, 0.001)
+			if crossing != Vector3.INF and _ball.position.z < furthest.z:
+				furthest = _ball.position
+			if made_switch.hits > 0:
+				break
+		if made_switch.hits > 0:
+			made.append(str(delay_ms))
+		report.append("%d ms after the ball reached the flipper: %s" % [delay_ms, "MADE" if made_switch.hits > 0 else (
+				"crossed x %.3f at %.1f m/s (spin/roll %.2f), got to %s" % [crossing.x, crossing_speed,
+						crossing_spin, furthest] if crossing != Vector3.INF
+				else "did not get up")])
+	print("Right flipper to left ramp: made at %s ms\n  %s" % [", ".join(made), "\n  ".join(report)])
+	if made.size() < 2:
+		_failures.append("the left ramp cannot be made from the right flipper (made at %d timings)" % made.size())
