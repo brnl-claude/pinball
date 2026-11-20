@@ -631,12 +631,17 @@ func _test_top_left_corner_drains_into_lanes() -> void:
 func _test_ramp_from_right_flipper() -> void:
 	var made := PackedStringArray()
 	var report := PackedStringArray()
-	for delay_ms in range(0, 330, 15):
+	for delay_ms in range(0, 260, 10):
 		await _load_table()
 		var radius := _ball.tuning.scaled_ball_radius()
 		var made_switch: BallSwitch = _table.get_node("LeftRampMade")
 		_place_ball(Vector3(0.144, radius, 0.26))
 		_ball.linear_velocity = Vector3(0.0, 0.0, 0.3)
+		# The delay counts from when the ball reaches the flipper's base.
+		for i in 2000:
+			await physics_frame
+			if _ball.position.z > 0.37:
+				break
 		await _ticks(delay_ms)
 		_right.energized = true
 		var crossing := Vector3.INF
@@ -652,7 +657,7 @@ func _test_ramp_from_right_flipper() -> void:
 				break
 		if made_switch.hits > 0:
 			made.append(str(delay_ms))
-		report.append("%d ms: %s" % [delay_ms, "MADE" if made_switch.hits > 0 else (
+		report.append("%d ms after the ball reached the flipper: %s" % [delay_ms, "MADE" if made_switch.hits > 0 else (
 				"crossed x %.3f at %.1f m/s" % [crossing.x, crossing_speed] if crossing != Vector3.INF
 				else "did not get up")])
 	print("Right flipper to left ramp: made at %s ms\n  %s" % [", ".join(made), "\n  ".join(report)])
