@@ -78,6 +78,8 @@ func _run() -> void:
 	_expect(reloaded.high_scores == _rules.high_scores, "high scores are persisted")
 	reloaded.free()
 
+	await _test_tilt()
+
 	print("Rules: final score %d, high scores %s" % [_rules.score, _rules.high_scores])
 	print("")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(HIGH_SCORE_PATH))
@@ -88,6 +90,41 @@ func _run() -> void:
 		for failure in _failures:
 			printerr("RULES TEST FAIL: ", failure)
 		quit(1)
+
+
+## A tilted ball scores nothing, gets no bonus or ball save, and the next
+## ball starts with working flippers.
+func _test_tilt() -> void:
+	var messages: Array[String] = []  # an Array, so the lambda appends to this one
+	_rules.message.connect(func(text: String): messages.append(text))
+	_rules.start_game()
+	await _launch()
+	var cabinet: Cabinet = _table.get("cabinet")
+	cabinet.use_input = false
+	_ball.freeze = true
+	var period_ticks := int(TAU * sqrt(cabinet.bob_length / 9.81) * Engine.physics_ticks_per_second)
+	for i in 12:
+		if _rules.tilted:
+			break
+		cabinet.nudge(Vector3.RIGHT)
+		await _ticks(period_ticks)
+	_ball.freeze = false
+	_expect(_rules.tilted, "nudging in step with the bob tilts the ball")
+	_expect(messages.has("DANGER") and messages.has("TILT"), "the rules show DANGER and TILT (%s)" % ", ".join(PackedStringArray(messages)))
+	_expect(not _table.get("left_flipper").enabled, "a tilt kills the flippers")
+	_expect(_rules.ball_save_left == 0.0, "a tilt cancels ball save")
+
+	var score_before := _rules.score
+	await _roll_over("TopLaneRollover1")
+	_expect(_rules.score == score_before, "a tilted ball scores nothing")
+	await _drain()
+	_expect(_rules.state == GameRules.State.BALL_ENDING and _rules.ball_number == 1,
+			"a tilted ball drains without ball save")
+	_expect(_rules.score == score_before, "a tilted ball gets no bonus")
+	await _ticks(int(_rules.bonus_display_seconds * 1000) + 50)
+	_expect(_rules.ball_number == 2 and not _rules.tilted, "the next ball is not tilted")
+	_expect(_table.get("left_flipper").enabled and not cabinet.is_tilted,
+			"the next ball has working flippers")
 
 
 func _setup() -> void:

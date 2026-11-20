@@ -1,16 +1,19 @@
 class_name GameRules
 extends Node
-## Game rules for a table: games, balls, ball save, bonus and high scores.
+## Game rules for a table: games, balls, ball save, bonus, tilt and high
+## scores.
 ##
 ## The rules only talk to the table through its signals (`part_scored`,
-## `ball_drained`, `ball_launched`) and a few calls (`serve_ball`,
-## `set_flippers_enabled`), so the physics never depends on the rules.
+## `ball_drained`, `ball_launched`, `tilt_warning`, `tilted`) and a few calls
+## (`serve_ball`, `set_flippers_enabled`, `reset_tilt`), so the physics never
+## depends on the rules.
 ## Timers count physics ticks, so the rules are deterministic in tests.
 
 signal state_changed(state: State)
 signal score_changed(score: int)
 signal ball_started(ball_number: int)
 signal ball_saved
+signal ball_tilted
 signal bonus_awarded(bonus: int, multiplier: int)
 signal game_over(final_score: int, high_score_rank: int)
 signal message(text: String)
@@ -44,6 +47,8 @@ var multiplier := 1
 ## Seconds of ball save left; > 0 means a drain gives the ball back.
 var ball_save_left := 0.0
 var high_scores: Array[int] = []
+## The current ball is tilted: no scoring, no bonus, no ball save.
+var tilted := false
 
 var table: Node
 
@@ -60,6 +65,9 @@ func _ready() -> void:
 	table.connect("part_scored", _on_part_scored)
 	table.connect("ball_drained", _on_ball_drained)
 	table.connect("ball_launched", _on_ball_launched)
+	if table.has_signal("tilted"):
+		table.connect("tilt_warning", _on_tilt_warning)
+		table.connect("tilted", _on_tilted)
 	load_high_scores()
 	_enter_attract()
 
@@ -97,6 +105,9 @@ func _start_ball() -> void:
 	multiplier = 1
 	ball_save_left = 0.0
 	_ball_in_play = false
+	tilted = false
+	if table.has_method("reset_tilt"):
+		table.call("reset_tilt")
 	table.call("serve_ball")
 	table.call("set_flippers_enabled", true)
 	ball_started.emit(ball_number)
@@ -111,6 +122,11 @@ func _on_ball_launched() -> void:
 
 func _on_ball_drained() -> void:
 	if state != State.PLAYING:
+		return
+	if tilted:
+		# A tilted ball ends without bonus; the next ball starts normally.
+		_set_state(State.BALL_ENDING)
+		_state_time_left = bonus_display_seconds
 		return
 	if ball_save_left > 0.0:
 		ball_save_left = 0.0
@@ -151,8 +167,24 @@ func _enter_attract() -> void:
 	message.emit("PRESS START")
 
 
-func _on_part_scored(points: int, part: Node) -> void:
+func _on_tilt_warning(warnings_left: int) -> void:
+	if state != State.PLAYING or tilted:
+		return
+	message.emit("DANGER" if warnings_left > 0 else "DANGER  DANGER")
+
+
+func _on_tilted() -> void:
 	if state != State.PLAYING:
+		return
+	tilted = true
+	ball_save_left = 0.0
+	table.call("set_flippers_enabled", false)
+	ball_tilted.emit()
+	message.emit("TILT")
+
+
+func _on_part_scored(points: int, part: Node) -> void:
+	if state != State.PLAYING or tilted:
 		return
 	_add_score(points)
 	if part is Rollover:

@@ -32,7 +32,11 @@ godot --path . --headless --fixed-fps 1000 --script res://tests/rules_test.gd   
 
 ## Game rules
 
-Press **1** to start a game: 3 balls, an 8-second ball save after each launch, and an end-of-ball bonus. Rollovers, standups and drop targets add to the bonus; lighting all three top lanes advances the bonus multiplier (up to 5×), and lighting all three standups scores 5,000. The top 5 scores are saved in `user://high_scores.cfg`.
+Press **1** to start a game: 3 balls, an 8-second ball save after each launch, and an end-of-ball bonus. Rollovers, standups and drop targets add to the bonus; lighting all three top lanes advances the bonus multiplier (up to 5×), and lighting all three standups scores 5,000.
+
+**Nudging and tilt:** Z, `/` and Space shove the cabinet from the left, from the right and from the front. The ball reacts to the cabinet's motion, and a cradled ball can be bumped off a flipper. A tilt bob swings with every shove: the first two times it touches its ring you get a DANGER warning, the third time the ball tilts. A tilted ball loses its flippers, coils, scoring, ball save and bonus; the next ball starts normally. Press F3 to see the bob's swing.
+
+The top 5 scores are saved in `user://high_scores.cfg`.
 
 ## Settings (Phase 0)
 
@@ -46,8 +50,8 @@ Press **1** to start a game: 3 balls, an 8-second ball save after each launch, a
 | Folder | Contents |
 |---|---|
 | `core/` | tick loop, settings, input |
-| `physics/` | ball, flippers, nudge/tilt |
-| `table_parts/` | reusable table parts |
+| `physics/` | physics tuning |
+| `table_parts/` | reusable table parts, including the cabinet (nudge and tilt) |
 | `tables/` | tables |
 | `rules/` | game rules |
 | `cameras/` | camera rigs and layout profiles |

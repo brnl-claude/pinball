@@ -17,9 +17,13 @@ signal scored(points: int)
 @export var lamp_color := Color(1.0, 0.85, 0.4)
 
 var _last_kick_ms := -100000
+## False while the machine is tilted: the coil stays dead.
+var enabled := true
 
 
 func on_ball_hit(ball: Ball) -> void:
+	if not enabled:
+		return
 	var now := Time.get_ticks_msec()
 	if ball.linear_velocity.length() < min_hit_speed or now - _last_kick_ms < cooldown * 1000.0:
 		return

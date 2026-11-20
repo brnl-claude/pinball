@@ -21,6 +21,8 @@ var _shape_node: CollisionShape3D
 var _body_mesh: MeshInstance3D
 var _cap_mesh: MeshInstance3D
 var _last_kick_ms := -100000
+## False while the machine is tilted: the coil stays dead.
+var enabled := true
 
 
 func _ready() -> void:
@@ -28,6 +30,8 @@ func _ready() -> void:
 
 
 func on_ball_hit(ball: Ball) -> void:
+	if not enabled:
+		return
 	var now := Time.get_ticks_msec()
 	if now - _last_kick_ms < cooldown * 1000.0:
 		return
