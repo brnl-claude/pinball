@@ -29,6 +29,8 @@ signal tilted
 @export var shooter_lane_x := 0.2
 ## Most balls in play at once (the main ball plus extras).
 @export var max_balls := 4
+## Magna-save uses per ball (the magnet in the left outlane).
+@export var magna_saves_per_ball := 1
 ## Settle time in the shooter lane before an auto-plunge (s).
 @export var auto_plunge_delay := 0.3
 
@@ -41,6 +43,9 @@ signal tilted
 var cabinet: Cabinet
 var replay: Replay
 var drained_count := 0
+var magna_saves_left := 0
+## The magna-save magnet, if the table has one.
+var magna_save: Magnet
 ## Raw points from all parts since the table loaded (rules keep the game score).
 var score := 0
 var _in_play: Array[Ball] = []
@@ -66,6 +71,10 @@ func _ready() -> void:
 	# Deferred: balls leave the table on a drain, which must not happen while
 	# the physics server is flushing area queries.
 	drain.ball_drained.connect(_on_ball_drained, CONNECT_DEFERRED)
+	magna_save = get_node_or_null("MagnaSave") as Magnet
+	var settings := get_node_or_null("/root/GameSettings")
+	if settings:
+		apply_settings(settings)
 	for node in find_children("*", "", true, false):
 		if node.has_signal("scored"):
 			node.connect("scored", _on_scored.bind(node))
@@ -75,6 +84,8 @@ func _ready() -> void:
 func _physics_process(delta: float) -> void:
 	if Input.is_action_just_pressed("reset_ball"):
 		serve_ball()
+	if Input.is_action_just_pressed("magna_save"):
+		use_magna_save()
 	for b in _in_play:
 		var in_lane := b.position.x > shooter_lane_x
 		if _in_lane.get(b, false) and not in_lane:
@@ -83,8 +94,20 @@ func _physics_process(delta: float) -> void:
 	_step_auto_plunge(delta)
 
 
+## Switches the magna-save magnet on, if a use is left and the flippers
+## work (not in attract mode or after a tilt). Returns whether it did.
+func use_magna_save() -> bool:
+	if magna_save == null or magna_save.active or magna_saves_left <= 0 \
+			or not left_flipper.enabled:
+		return false
+	magna_saves_left -= 1
+	magna_save.activate()
+	return true
+
+
 ## Ends multiball and puts the main ball in the shooter lane for the player.
 func serve_ball() -> void:
+	magna_saves_left = magna_saves_per_ball
 	_launch_queue = 0
 	_auto_plunging = null
 	for b in _in_play.duplicate():
@@ -97,6 +120,20 @@ func serve_ball() -> void:
 ## Balls in play, counting the ones waiting to be auto-plunged.
 func balls_in_play() -> int:
 	return _in_play.size() + _launch_queue
+
+
+## Applies the game settings (GameSettings autoload): slope, tilt
+## warnings and magna-saves per ball.
+func apply_settings(settings: Node) -> void:
+	var slope: float = settings.get("slope_degrees")
+	if ball.tuning and not is_equal_approx(ball.tuning.slope_degrees, slope):
+		ball.tuning.slope_degrees = slope
+		for node in get_tree().get_nodes_in_group("balls"):
+			if node is Ball:
+				node.apply_tuning()
+	var preset: Dictionary = settings.call("preset")
+	cabinet.warnings_allowed = preset["tilt_warnings"]
+	magna_saves_per_ball = preset["magna_saves"]
 
 
 ## Auto-plunges `count` extra balls into play, one at a time through the

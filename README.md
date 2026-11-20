@@ -43,7 +43,8 @@ godot --path . --headless --fixed-fps 1000 --script res://tests/rules_test.gd   
 | Plunger (hold to pull, release to launch) | Enter | A |
 | Nudge left / right / up | Z / `/` / Space | – |
 | Start game | 1 | Start |
-| Pause | Esc | Back |
+| Magna-save (left outlane magnet) | Left Ctrl | X |
+| Pause and settings (slope, difficulty, balls, screen) | Esc | Back |
 | Switch camera profile (auto, portrait, landscape, ultrawide, top-down) | C | – |
 | Rotate screen 0/90/180/270° (monitor turned upright in a cabinet) | R | – |
 | Render scale: native, or FSR 2 at 77/67/59/50% | V | – |

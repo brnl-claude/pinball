@@ -110,10 +110,14 @@ var _lock_time_left := 0.0
 
 
 func _ready() -> void:
+	add_to_group("rules")
 	table = get_node_or_null(table_path)
 	if table == null:
 		push_error("GameRules needs a table_path")
 		return
+	var settings := get_node_or_null("/root/GameSettings")
+	if settings:
+		apply_settings(settings)
 	table.set("respawn_delay", -1.0)
 	table.connect("part_scored", _on_part_scored)
 	table.connect("ball_drained", _on_ball_drained)
@@ -157,6 +161,13 @@ func _physics_process(delta: float) -> void:
 					_finish_ball()
 				State.GAME_OVER:
 					_enter_attract()
+
+
+## Applies the game settings (GameSettings autoload): balls per game and
+## the difficulty's ball save time.
+func apply_settings(settings: Node) -> void:
+	balls_per_game = settings.get("balls_per_game")
+	ball_save_seconds = settings.call("preset")["ball_save_seconds"]
 
 
 func start_game() -> void:

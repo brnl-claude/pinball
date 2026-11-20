@@ -37,6 +37,11 @@ func _initialize() -> void:
 		settings.name = "DisplaySettings"
 		root.add_child(settings)
 
+	if not root.has_node("GameSettings"):
+		var game_settings: Node = load("res://core/game_settings.gd").new()
+		game_settings.name = "GameSettings"
+		root.add_child(game_settings)
+
 	var scene: PackedScene = load("res://main.tscn")
 	_expect(scene != null, "main.tscn failed to load")
 	if scene:
@@ -56,6 +61,7 @@ func _process(_delta: float) -> bool:
 		_check_camera_framing()
 		_check_layout_profiles()
 		_check_graphics()
+		_check_settings_menu()
 	if _failures.is_empty():
 		print("SMOKE TEST OK")
 		quit(0)
@@ -64,6 +70,37 @@ func _process(_delta: float) -> bool:
 			printerr("SMOKE TEST FAIL: ", failure)
 		quit(1)
 	return true
+
+
+## The settings menu pauses the game, and game settings reach the table
+## and rules at once.
+func _check_settings_menu() -> void:
+	var menu = _main.get_node_or_null("SettingsMenu")
+	var settings = root.get_node("GameSettings")
+	var table = _main.get_node("Table")
+	var rules = _main.get_node("GameRules")
+	if menu == null:
+		_failures.append("the main scene has no settings menu")
+		return
+	menu.open()
+	_expect(paused and menu.visible, "the settings menu pauses the game")
+	var slope_before: float = settings.slope_degrees
+	var difficulty_before: int = settings.difficulty
+	settings.set_slope(7.5)
+	var ball: Ball = table.ball
+	var expected := ball.mass * ball.tuning.gravity_vector().z
+	_expect(is_equal_approx(ball.tuning.slope_degrees, 7.5) and absf(ball.constant_force.z - expected) < 0.001,
+			"a slope setting tilts the playfield (force %.4f N, expected %.4f N)" % [ball.constant_force.z, expected])
+	settings.set_difficulty(0)
+	_expect(rules.ball_save_seconds == 15.0 and table.cabinet.warnings_allowed == 3 and table.magna_saves_per_ball == 2,
+			"Easy gives a longer ball save, more tilt warnings and magna-saves")
+	settings.set_balls_per_game(5)
+	_expect(rules.balls_per_game == 5, "the balls per game setting reaches the rules")
+	settings.set_balls_per_game(3)
+	settings.set_difficulty(difficulty_before)
+	settings.set_slope(slope_before)
+	menu.close()
+	_expect(not paused and not menu.visible, "closing the settings menu resumes the game")
 
 
 ## The camera must fit the whole table on every supported aspect ratio.

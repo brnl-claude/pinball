@@ -29,6 +29,7 @@ func _run() -> void:
 	await _test_flipper_eos_give()
 	await _test_cradle()
 	await _test_outlane_drains()
+	await _test_magna_save()
 	await _test_slingshot()
 	await _test_slingshot_ends_do_not_kick()
 	await _test_pop_bumper()
@@ -252,6 +253,39 @@ func _test_outlane_drains() -> void:
 	print("Outlane: drained %d time(s)" % drained)
 	if drained != 1:
 		_failures.append("ball in the left outlane did not drain")
+
+
+## The magna-save catches a ball rolling down the left outlane, holds it,
+## and throws it back up past the lane divider. One use per ball.
+func _test_magna_save() -> void:
+	await _load_table()
+	var magnet: Magnet = _table.get("magna_save")
+	if magnet == null:
+		_failures.append("the table has no magna-save magnet")
+		return
+	var radius := _ball.tuning.scaled_ball_radius()
+	_place_ball(Vector3(-0.2375, radius, 0.22))
+	_ball.linear_velocity = Vector3(0.0, 0.0, 1.0)
+	_expect_true(_table.call("use_magna_save"), "the magna-save switches on")
+	_expect_true(not _table.call("use_magna_save"), "only one magna-save per ball")
+	await _ticks(700)
+	var offset := _ball.global_position - magnet.global_position
+	var held_distance := Vector2(offset.x, offset.z).length()
+	var held_speed := _ball.linear_velocity.length()
+	var min_z := INF
+	for i in 2500:
+		await physics_frame
+		min_z = minf(min_z, _ball.position.z)
+	var drained: int = _table.get("drained_count")
+	print("Magna-save: held %.1f mm from the magnet at %.3f m/s, thrown back up to z %.3f, drained %d" % [
+			held_distance * 1000.0, held_speed, min_z, drained])
+	_expect_true(held_distance < 0.005 and held_speed < 0.05, "the magnet holds the ball")
+	_expect_true(min_z < 0.17, "the released ball goes back up past the lane divider")
+
+
+func _expect_true(condition: bool, text: String) -> void:
+	if not condition:
+		_failures.append(text)
 
 
 ## Fires the ball at a point with the given velocity, from `distance` meters

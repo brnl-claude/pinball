@@ -18,6 +18,10 @@ const ACTIONS := {
 		{"key": KEY_ENTER},
 		{"joy_button": JOY_BUTTON_A},
 	],
+	"magna_save": [
+		{"key": KEY_CTRL, "location": KEY_LOCATION_LEFT},
+		{"joy_button": JOY_BUTTON_X},
+	],
 	"nudge_left": [{"key": KEY_Z}],
 	"nudge_right": [{"key": KEY_SLASH}],
 	"nudge_up": [{"key": KEY_SPACE}],
