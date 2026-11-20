@@ -43,6 +43,7 @@ func _run() -> void:
 	await _test_ramp(3.0, true)
 	await _test_ramp(4.0, true)
 	await _test_ball_passes_under_ramp()
+	await _test_ramp_from_right_flipper()
 	await _test_top_left_corner_drains_into_lanes()
 	await _test_saucer()
 	await _test_spinner()
@@ -474,9 +475,12 @@ func _test_ramp(speed: float, should_make: bool) -> void:
 	var made_switch: BallSwitch = _table.get_node("LeftRampMade")
 	var radius := _ball.tuning.scaled_ball_radius()
 	var entrance := ramp.points[0]
-	_place_ball(Vector3(entrance.x, radius, entrance.z + 0.05))
-	_ball.linear_velocity = Vector3(0.0, 0.0, -speed)
-	_ball.angular_velocity = Vector3(-speed / radius, 0.0, 0.0)
+	var axis := ramp.points[1] - entrance
+	axis.y = 0.0
+	axis = axis.normalized()
+	_place_ball(Vector3(entrance.x, radius, entrance.z) - axis * 0.05)
+	_ball.linear_velocity = axis * speed
+	_ball.angular_velocity = Vector3.UP.cross(axis) * (-speed / radius)
 	var top := 0.0
 	var landed := Vector3.INF
 	var made_tick := -1
@@ -619,3 +623,38 @@ func _test_top_left_corner_drains_into_lanes() -> void:
 	print("Top left corner: ball got out at %s" % escaped_at)
 	if escaped_at == Vector3.INF:
 		_failures.append("a ball in the top left corner got stuck at %s" % _ball.position)
+
+
+## The left ramp must be makeable from the right flipper the way a player
+## shoots: a ball rolls down the right inlane onto the flipper and the
+## player times the flip. Sweeps the timing and needs a window that works.
+func _test_ramp_from_right_flipper() -> void:
+	var made := PackedStringArray()
+	var report := PackedStringArray()
+	for delay_ms in range(0, 330, 15):
+		await _load_table()
+		var radius := _ball.tuning.scaled_ball_radius()
+		var made_switch: BallSwitch = _table.get_node("LeftRampMade")
+		_place_ball(Vector3(0.144, radius, 0.26))
+		_ball.linear_velocity = Vector3(0.0, 0.0, 0.3)
+		await _ticks(delay_ms)
+		_right.energized = true
+		var crossing := Vector3.INF
+		var crossing_speed := 0.0
+		for i in 2500:
+			await physics_frame
+			if i == 400:
+				_right.energized = false
+			if crossing == Vector3.INF and _ball.position.z < -0.03:
+				crossing = _ball.position
+				crossing_speed = _ball.speed()
+			if made_switch.hits > 0:
+				break
+		if made_switch.hits > 0:
+			made.append(str(delay_ms))
+		report.append("%d ms: %s" % [delay_ms, "MADE" if made_switch.hits > 0 else (
+				"crossed x %.3f at %.1f m/s" % [crossing.x, crossing_speed] if crossing != Vector3.INF
+				else "did not get up")])
+	print("Right flipper to left ramp: made at %s ms\n  %s" % [", ".join(made), "\n  ".join(report)])
+	if made.size() < 2:
+		_failures.append("the left ramp cannot be made from the right flipper (made at %d timings)" % made.size())
