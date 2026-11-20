@@ -3,8 +3,9 @@ class_name WireRamp
 extends StaticBody3D
 ## A wire ramp (habitrail): the ball rolls on two steel wires, with a guard
 ## wire on each side. `points` is the track of the ball's lowest point, in
-## local coordinates, as for `Ramp`; end it at the playfield (y = 0) and
-## the ball rolls off the wire ends onto the playfield.
+## local coordinates, as for `Ramp`. The ball rolls off the wire ends and
+## drops onto the playfield; keep the wires above ball height (27 mm) where
+## a ball on the playfield can get under them, or it gets wedged.
 ##
 ## Each wire is a chain of capsules. Their rounded ends overlap at every
 ## joint, so the ball rolls over the joints without bumps.

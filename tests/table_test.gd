@@ -519,12 +519,16 @@ func _test_ball_passes_under_ramp() -> void:
 	_ball.angular_velocity = Vector3(1.6 / radius, 0.0, 0.0)
 	var highest_z := 0.0
 	var top := 0.0
+	var lowest := radius
 	for i in 1500:
 		await physics_frame
 		highest_z = minf(highest_z, _ball.position.z)
 		top = maxf(top, _ball.position.y)
-	print("Under the wire ramp: got up to z %.3f, highest centre %.4f m, ended at %s" % [
-			highest_z, top, _ball.position])
+		lowest = minf(lowest, _ball.position.y)
+	print("Under the wire ramp: got up to z %.3f, centre between %.4f and %.4f m, ended at %s" % [
+			highest_z, lowest, top, _ball.position])
+	if lowest < radius - 0.0005:
+		_failures.append("ball got wedged under the wire ramp (centre at %.4f m)" % lowest)
 	if top > radius + 0.004:
 		_failures.append("ball under the wire ramp bounced up (%.4f m)" % top)
 	if _ball.position.z < highest_z + 0.1:

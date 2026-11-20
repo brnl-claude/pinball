@@ -18,7 +18,9 @@ extends StaticBody3D
 	set(value):
 		width = value
 		_rebuild()
-## Wall height above the floor (m).
+## Wall height above the floor (m). In tight turns the ball's spin rubs it
+## up the outer wall; walls that reach to within a ball radius of the glass
+## keep it in.
 @export var wall_height := 0.022:
 	set(value):
 		wall_height = value

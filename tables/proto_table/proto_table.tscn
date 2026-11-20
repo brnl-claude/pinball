@@ -294,11 +294,13 @@ script = ExtResource("14_rollover")
 
 [node name="LeftRamp" type="StaticBody3D" parent="."]
 script = ExtResource("15_ramp")
+wall_height = 0.03
+friction = 0.1
 points = PackedVector3Array(-0.17, -0.001, -0.06, -0.17, 0.008, -0.12, -0.17, 0.026, -0.2, -0.17, 0.042, -0.28, -0.17, 0.05, -0.35, -0.179, 0.053, -0.372, -0.201, 0.054, -0.381, -0.223, 0.054, -0.372, -0.232, 0.054, -0.35, -0.232, 0.053, -0.32)
 
 [node name="LeftRampReturn" type="StaticBody3D" parent="."]
 script = ExtResource("16_wire")
-points = PackedVector3Array(-0.232, 0.051, -0.33, -0.232, 0.049, -0.3, -0.233, 0.045, -0.2, -0.233, 0.04, -0.08, -0.232, 0.036, 0, -0.225, 0.026, 0.06, -0.21, 0.012, 0.11, -0.202, 0.001, 0.15, -0.2, -0.001, 0.165)
+points = PackedVector3Array(-0.232, 0.051, -0.33, -0.232, 0.049, -0.3, -0.233, 0.045, -0.2, -0.233, 0.04, -0.08, -0.232, 0.036, 0, -0.226, 0.034, 0.06, -0.212, 0.032, 0.11, -0.203, 0.031, 0.15)
 
 [node name="LeftRampMade" type="Area3D" parent="."]
 position = Vector3(-0.233, 0.058, -0.15)
