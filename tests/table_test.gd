@@ -653,8 +653,16 @@ func _test_ramp_from_right_flipper() -> void:
 		var path := PackedStringArray()
 		for i in 2500:
 			await physics_frame
-			if crossing != Vector3.INF and path.size() < 16 and i % 15 == 0:
-				path.append("(%.3f,%.3f,%.3f)" % [_ball.position.x, _ball.position.y, _ball.position.z])
+			# Close-up of the mouth: every 2 ms near it, with velocity and contacts.
+			if delay_ms == 220 and _ball.position.z < 0.05 and _ball.position.z > -0.12 and i % 2 == 0:
+				var touching := PackedStringArray()
+				for body in _ball.get_colliding_bodies():
+					touching.append(body.name)
+				path.append("\n      p(%.3f,%.4f,%.3f) v(%.2f,%.2f,%.2f) w(%.0f,%.0f,%.0f) %s" % [
+						_ball.position.x, _ball.position.y, _ball.position.z,
+						_ball.linear_velocity.x, _ball.linear_velocity.y, _ball.linear_velocity.z,
+						_ball.angular_velocity.x, _ball.angular_velocity.y, _ball.angular_velocity.z,
+						",".join(touching)])
 			if i == 400:
 				_right.energized = false
 			if crossing == Vector3.INF and _ball.position.z < -0.03:
@@ -668,8 +676,8 @@ func _test_ramp_from_right_flipper() -> void:
 				break
 		if made_switch.hits > 0:
 			made.append(str(delay_ms))
-		elif crossing != Vector3.INF and absf(crossing.x + 0.105) < 0.03:
-			report.append("    path after the mouth: " + " ".join(path))
+		elif not path.is_empty():
+			report.append("    close-up at the mouth:" + "".join(path))
 		report.append("%d ms after the ball reached the flipper: %s" % [delay_ms, "MADE" if made_switch.hits > 0 else (
 				"crossed x %.3f at %.1f m/s (spin/roll %.2f), got to %s" % [crossing.x, crossing_speed,
 						crossing_spin, furthest] if crossing != Vector3.INF
