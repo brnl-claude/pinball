@@ -43,6 +43,17 @@ jobs:
       - name: Import project
         run: ~/godot/godot --headless --import 2>&1 | tee import.log
 
+      - name: Check that the import leaves the working tree clean
+        run: |
+          # Godot 4.4+ creates a .uid file next to every script; they must be
+          # committed, or every checkout ends up with a dirty working tree.
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::Importing the project changed or created files. Commit them:"
+            git status --porcelain
+            git diff
+            exit 1
+          fi
+
       - name: Smoke test
         run: |
           set -o pipefail
