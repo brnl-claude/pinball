@@ -183,16 +183,17 @@ func _update_restitution() -> void:
 			continue
 		var closest: Array = _closest_on_bat(ball.global_position)
 		var axis_point: Vector3 = closest[0]
+		var bat_radius: float = closest[1]
 		var offset := ball.global_position - axis_point
 		offset.y = 0.0
 		var distance := offset.length()
 		var radius: float = ball.get("tuning").scaled_ball_radius() if ball.get("tuning") else 0.0135
-		var gap := distance - closest[1] - radius
+		var gap := distance - bat_radius - radius
 		if gap > restitution_lookahead or gap >= best_gap or distance < 0.0001:
 			continue
 		best_gap = gap
 		var normal := offset / distance
-		var contact := axis_point + normal * float(closest[1])
+		var contact := axis_point + normal * bat_radius
 		var relative := ball.linear_velocity - surface_velocity_at(contact)
 		impact_speed = maxf(-relative.dot(normal), 0.0)
 	var target := restitution_at(impact_speed)

@@ -177,9 +177,9 @@ func _bounce_off_flipper(flipper: Flipper, fraction: float, speed: float) -> flo
 ## The rubber is lively for slow balls and deader for fast ones.
 func _test_flipper_restitution() -> void:
 	await _load_table()
-	var slow := await _bounce_off_flipper(_left, 0.5, 0.5)
+	var slow: float = await _bounce_off_flipper(_left, 0.5, 0.5)
 	await _load_table()
-	var fast := await _bounce_off_flipper(_left, 0.5, 4.0)
+	var fast: float = await _bounce_off_flipper(_left, 0.5, 4.0)
 	print("Flipper rubber: restitution %.2f at 0.5 m/s, %.2f at 4 m/s (model %.2f / %.2f)" % [
 			slow, fast, _left.restitution_at(0.5), _left.restitution_at(4.0)])
 	if slow < fast + 0.1:
