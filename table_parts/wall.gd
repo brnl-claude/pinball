@@ -16,6 +16,11 @@ extends StaticBody3D
 	set(value):
 		color = value
 		_rebuild()
+## Surface finish of the visible mesh (see TableMaterials).
+@export var finish := TableMaterials.Finish.PAINTED:
+	set(value):
+		finish = value
+		_rebuild()
 @export_range(0.0, 1.0) var friction := 0.3:
 	set(value):
 		friction = value
@@ -60,8 +65,6 @@ func _rebuild() -> void:
 	_mesh_node.visible = show_mesh
 	var mesh := BoxMesh.new()
 	mesh.size = size
-	surface_material = StandardMaterial3D.new()
-	surface_material.albedo_color = color
-	surface_material.roughness = 0.6
+	surface_material = TableMaterials.make(finish, color)
 	mesh.material = surface_material
 	_mesh_node.mesh = mesh

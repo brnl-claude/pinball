@@ -1,8 +1,9 @@
 class_name LampFx
 ## Helpers for lighting up part materials (inserts, caps, rubbers).
 
-const LIT_ENERGY := 1.6
-const FLASH_ENERGY := 4.0
+## Emission above 1.0 passes the glow's HDR threshold, so lit inserts bloom.
+const LIT_ENERGY := 2.5
+const FLASH_ENERGY := 6.0
 
 
 ## Makes a material glow briefly, then fade back to its lit/unlit level.

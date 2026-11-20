@@ -20,7 +20,9 @@ background_mode = 2
 sky = SubResource("Sky_1")
 tonemap_mode = 3
 glow_enabled = true
+glow_bloom = 0.04
 ssao_enabled = true
+ssil_enabled = true
 ssr_enabled = true
 
 [node name="Main" type="Node3D"]
@@ -31,6 +33,23 @@ environment = SubResource("Env_1")
 [node name="Sun" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.866025, -0.353553, 0.353553, 0, 0.707107, 0.707107, -0.5, -0.612372, 0.612372, 0, 2, 0)
 shadow_enabled = true
+
+[node name="FillLightLeft" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.22, 0.35, -0.15)
+light_color = Color(1, 0.88, 0.72, 1)
+light_energy = 0.5
+omni_range = 1.2
+
+[node name="FillLightRight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.22, 0.35, 0.25)
+light_color = Color(0.78, 0.86, 1, 1)
+light_energy = 0.4
+omni_range = 1.2
+
+[node name="ReflectionProbe" type="ReflectionProbe" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+size = Vector3(0.8, 0.4, 1.4)
+box_projection = true
 
 [node name="Table" parent="." instance=ExtResource("3_table")]
 

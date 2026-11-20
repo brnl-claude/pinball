@@ -48,6 +48,7 @@ func _process(_delta: float) -> bool:
 		_expect(get_nodes_in_group("balls").size() == 1, "main scene must contain one ball")
 		_check_camera_framing()
 		_check_layout_profiles()
+		_check_graphics()
 	if _failures.is_empty():
 		print("SMOKE TEST OK")
 		quit(0)
@@ -122,6 +123,36 @@ func _check_layout_profiles() -> void:
 	_expect(is_equal_approx(hud.transform.get_rotation(), PI / 2.0), "a quarter turn rotates the HUD")
 	print("Layout: %.2f:1 unrotated, rotated 90°: %s" % [aspect_before, camera.profile_name()])
 	settings.call("set_screen_rotation", saved)
+
+
+## Graphics pass: PBR finishes, chrome ball, reflection probe and FSR 2.
+func _check_graphics() -> void:
+	var playfield = _main.get_node("Table/Playfield")
+	var playfield_material: StandardMaterial3D = playfield.get("surface_material")
+	_expect(playfield_material != null and playfield_material.clearcoat_enabled,
+			"the playfield has a clear-coated finish")
+	var ball: Ball = get_nodes_in_group("balls")[0]
+	var ball_mesh: SphereMesh = null
+	for child in ball.get_children():
+		if child is MeshInstance3D:
+			ball_mesh = child.mesh as SphereMesh
+	var chrome: StandardMaterial3D = (ball_mesh.material as StandardMaterial3D) if ball_mesh else null
+	_expect(chrome != null and chrome.metallic == 1.0 and chrome.roughness < 0.1,
+			"the ball is polished chrome")
+	_expect(_main.get_node_or_null("ReflectionProbe") is ReflectionProbe,
+			"the main scene has a reflection probe over the table")
+
+	var settings := root.get_node_or_null("DisplaySettings")
+	if settings == null:
+		return
+	var saved: float = settings.get("render_scale")
+	settings.call("set_render_scale", 0.67)
+	_expect(root.scaling_3d_mode == Viewport.SCALING_3D_MODE_FSR2 and is_equal_approx(root.scaling_3d_scale, 0.67),
+			"a render scale below 100% upscales with FSR 2")
+	settings.call("set_render_scale", 1.0)
+	_expect(root.scaling_3d_mode != Viewport.SCALING_3D_MODE_FSR2 and root.scaling_3d_scale == 1.0,
+			"100% renders natively")
+	settings.call("set_render_scale", saved)
 
 
 func _expect(condition: bool, message: String) -> void:

@@ -74,8 +74,7 @@ func _rebuild() -> void:
 	body.top_radius = radius
 	body.bottom_radius = radius
 	body.height = 0.04
-	var body_material := StandardMaterial3D.new()
-	body_material.albedo_color = Color(0.92, 0.92, 0.95)
+	var body_material := TableMaterials.make(TableMaterials.Finish.PLASTIC, Color(0.92, 0.92, 0.95))
 	body.material = body_material
 	_body_mesh.mesh = body
 	_body_mesh.position.y = 0.02
@@ -84,9 +83,7 @@ func _rebuild() -> void:
 	cap.top_radius = cap_radius * 0.85
 	cap.bottom_radius = cap_radius
 	cap.height = 0.012
-	_cap_material = StandardMaterial3D.new()
-	_cap_material.albedo_color = cap_color
-	_cap_material.roughness = 0.3
+	_cap_material = TableMaterials.make(TableMaterials.Finish.PLASTIC, cap_color)
 	cap.material = _cap_material
 	_cap_mesh.mesh = cap
 	_cap_mesh.position.y = 0.046
