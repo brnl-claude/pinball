@@ -3,8 +3,10 @@ class_name Ramp
 extends StaticBody3D
 ## A plastic ramp: a floor with a wall on each side, swept along a smooth
 ## path. `points` is the track of the ball's lowest point (the top of the
-## floor) through the ramp, in local coordinates; start the first point a
-## millimetre below the playfield so the ball rolls on without a bump.
+## floor) through the ramp, in local coordinates. Start the first point a
+## few millimetres below the playfield: Jolt lets a ball sink up to its
+## penetration slop (2 mm) into the playfield after a hard hit, and a floor
+## edge above that height acts as a kerb that throws the ball in the air.
 ##
 ## Collision is one triangle mesh (floor and inner walls) that collides from
 ## both sides, so balls can also pass under or beside the ramp.

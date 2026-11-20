@@ -55,9 +55,11 @@ const SEGMENTS := 16
 		rest_angle_degrees = value
 		_apply_angle()
 @export var stroke_degrees := 50.0
-## Angular acceleration while energized (rad/s²).
-@export var up_acceleration := 1600.0
-@export var up_max_speed := 60.0
+## Angular acceleration while energized (rad/s²). The bat never reaches
+## `up_max_speed` within the stroke, so this sets the shot power: at 2500 the
+## stroke takes about 26 ms and the tip ends it at about 66 rad/s (5 m/s).
+@export var up_acceleration := 2500.0
+@export var up_max_speed := 75.0
 ## Angular acceleration of the return spring (rad/s²).
 @export var down_acceleration := 900.0
 @export var down_max_speed := 35.0

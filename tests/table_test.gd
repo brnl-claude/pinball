@@ -30,6 +30,7 @@ func _run() -> void:
 	await _test_cradle()
 	await _test_outlane_drains()
 	await _test_slingshot()
+	await _test_slingshot_ends_do_not_kick()
 	await _test_pop_bumper()
 	await _test_drop_target_bank()
 	await _test_rollover()
@@ -649,8 +650,19 @@ func _test_ramp_from_right_flipper() -> void:
 		var crossing_speed := 0.0
 		var crossing_spin := 0.0
 		var furthest := Vector3(0.0, 0.0, INF)
+		var path := PackedStringArray()
 		for i in 2500:
 			await physics_frame
+			# Close-up of the mouth: every 2 ms near it, with velocity and contacts.
+			if delay_ms == 220 and _ball.position.z < 0.05 and _ball.position.z > -0.12 and i % 2 == 0:
+				var touching := PackedStringArray()
+				for body in _ball.get_colliding_bodies():
+					touching.append(body.name)
+				path.append("\n      p(%.3f,%.4f,%.3f) v(%.2f,%.2f,%.2f) w(%.0f,%.0f,%.0f) %s" % [
+						_ball.position.x, _ball.position.y, _ball.position.z,
+						_ball.linear_velocity.x, _ball.linear_velocity.y, _ball.linear_velocity.z,
+						_ball.angular_velocity.x, _ball.angular_velocity.y, _ball.angular_velocity.z,
+						",".join(touching)])
 			if i == 400:
 				_right.energized = false
 			if crossing == Vector3.INF and _ball.position.z < -0.03:
@@ -664,6 +676,8 @@ func _test_ramp_from_right_flipper() -> void:
 				break
 		if made_switch.hits > 0:
 			made.append(str(delay_ms))
+		elif not path.is_empty():
+			report.append("    close-up at the mouth:" + "".join(path))
 		report.append("%d ms after the ball reached the flipper: %s" % [delay_ms, "MADE" if made_switch.hits > 0 else (
 				"crossed x %.3f at %.1f m/s (spin/roll %.2f), got to %s" % [crossing.x, crossing_speed,
 						crossing_spin, furthest] if crossing != Vector3.INF
@@ -671,3 +685,24 @@ func _test_ramp_from_right_flipper() -> void:
 	print("Right flipper to left ramp: made at %s ms\n  %s" % [", ".join(made), "\n  ".join(report)])
 	if made.size() < 2:
 		_failures.append("the left ramp cannot be made from the right flipper (made at %d timings)" % made.size())
+
+
+## Bram: the slingshots also kicked when the ball touched them near the top
+## or bottom post. Only the middle of the rubber face may fire.
+func _test_slingshot_ends_do_not_kick() -> void:
+	for fraction: float in [0.08, 0.92]:
+		await _load_table()
+		var sling: Slingshot = _table.get_node("LeftSlingshot")
+		var n2 := sling.normal_2d() * sling.kick_side
+		var normal := Vector3(n2.x, 0.0, n2.y)
+		var point := sling.start.lerp(sling.end, fraction)
+		var face := Vector3(point.x, 0.0, point.y)
+		var radius := _ball.tuning.scaled_ball_radius()
+		_fire_at(face + normal * (sling.thickness * 0.5 + radius), -normal * 0.6)
+		var best := 0.0
+		for i in 150:
+			await physics_frame
+			best = maxf(best, _ball.linear_velocity.dot(normal))
+		print("Slingshot end at %.2f: peak speed away %.2f m/s, score %d" % [fraction, best, _table.get("score")])
+		if _table.get("score") > 0 or best > 1.0:
+			_failures.append("slingshot kicked on a hit near its end (%.2f along)" % fraction)
