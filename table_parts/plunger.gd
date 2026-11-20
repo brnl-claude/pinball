@@ -23,6 +23,8 @@ extends AnimatableBody3D
 ## When false, `pulled` is driven by code (tests).
 var use_input := true
 var pulled := false
+## When false the rod cannot be pulled (attract mode, game over).
+var enabled := true
 ## Current retraction in meters.
 var pull := 0.0
 var release_speed := 0.0
@@ -52,6 +54,8 @@ func set_pull(value: float) -> void:
 
 
 func step(delta: float) -> void:
+	if not enabled:
+		pulled = false
 	if pulled:
 		release_speed = 0.0
 		pull = minf(pull + pull_speed * delta, max_pull)

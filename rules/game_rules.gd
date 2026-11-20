@@ -110,6 +110,7 @@ func _start_ball() -> void:
 		table.call("reset_tilt")
 	table.call("serve_ball")
 	table.call("set_flippers_enabled", true)
+	_set_plunger_enabled(true)
 	ball_started.emit(ball_number)
 	message.emit("BALL %d" % ball_number)
 
@@ -154,6 +155,7 @@ func _finish_ball() -> void:
 
 
 func _end_game() -> void:
+	_set_plunger_enabled(false)
 	var rank := record_high_score(score)
 	_set_state(State.GAME_OVER)
 	_state_time_left = game_over_seconds
@@ -163,6 +165,7 @@ func _end_game() -> void:
 
 func _enter_attract() -> void:
 	table.call("set_flippers_enabled", false)
+	_set_plunger_enabled(false)
 	_set_state(State.ATTRACT)
 	message.emit("PRESS START")
 
@@ -181,6 +184,12 @@ func _on_tilted() -> void:
 	table.call("set_flippers_enabled", false)
 	ball_tilted.emit()
 	message.emit("TILT")
+
+
+## The plunger only works while a game is running.
+func _set_plunger_enabled(value: bool) -> void:
+	if table.has_method("set_plunger_enabled"):
+		table.call("set_plunger_enabled", value)
 
 
 func _on_part_scored(points: int, part: Node) -> void:

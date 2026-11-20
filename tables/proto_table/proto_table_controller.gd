@@ -73,6 +73,10 @@ func set_flippers_enabled(value: bool) -> void:
 	right_flipper.enabled = value
 
 
+func set_plunger_enabled(value: bool) -> void:
+	plunger.enabled = value
+
+
 ## Flippers, slingshots and pop bumpers: everything a tilt switches off.
 func set_solenoids_enabled(value: bool) -> void:
 	set_flippers_enabled(value)

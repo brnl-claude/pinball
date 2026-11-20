@@ -24,12 +24,24 @@ func _run() -> void:
 
 	_expect(_rules.state == GameRules.State.ATTRACT, "rules start in attract mode")
 	_expect(not _table.get("left_flipper").enabled, "flippers are dead in attract mode")
+	# Pulling the plunger before a game starts does nothing.
+	var plunger: Plunger = _table.get("plunger")
+	plunger.use_input = false
+	plunger.pulled = true
+	await _ticks(200)
+	_expect(plunger.pull == 0.0, "the plunger does not move in attract mode (pull %.3f m)" % plunger.pull)
+	plunger.pulled = false
 
 	_rules.start_game()
 	await _ticks(10)
 	_expect(_rules.state == GameRules.State.PLAYING, "start_game enters PLAYING")
 	_expect(_rules.ball_number == 1, "the game starts on ball 1")
 	_expect(_table.get("left_flipper").enabled, "flippers work during play")
+	plunger.pulled = true
+	await _ticks(40)  # a short pull that keeps the ball in the lane
+	_expect(plunger.pull > 0.003, "the plunger works during a game")
+	plunger.pulled = false
+	await _ticks(100)
 
 	# Ball save: launch, drain right away → same ball, served again.
 	await _launch()
