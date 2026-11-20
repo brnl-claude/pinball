@@ -64,6 +64,14 @@ func _process(delta: float) -> void:
 					info += "    TILT"
 				elif rules.ball_save_left > 0.0:
 					info += "    BALL SAVE"
+				if rules.multiball:
+					info += "\nMULTIBALL    JACKPOT %d" % rules.jackpot
+				elif rules.lock_lit:
+					info += "\nLOCK IS LIT    LOCKED %d" % rules.locked
+				elif rules.locked > 0:
+					info += "\nLOCKED %d" % rules.locked
+				if rules.mode >= 0:
+					info += "\n%s  %d" % [GameRules.MODES[rules.mode]["name"], ceili(rules.mode_time_left)]
 				_info_label.text = info
 				_high_score_label.visible = false
 			_:

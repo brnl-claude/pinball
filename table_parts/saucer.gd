@@ -104,6 +104,15 @@ func eject() -> void:
 	SoundFx.play("kicker")
 
 
+## Lets go of the held ball without kicking it, e.g. to lock it, and
+## returns it.
+func take_ball() -> Ball:
+	var ball := held
+	if ball:
+		_release(ball)
+	return ball
+
+
 func _release(ball: Ball) -> void:
 	held = null
 	LampFx.set_lit(_insert_material, lamp_color, false)
