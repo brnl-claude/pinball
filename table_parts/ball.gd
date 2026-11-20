@@ -8,11 +8,19 @@ extends RigidBody3D
 
 const TABLE_LAYER := 1
 const BALL_LAYER := 2
+## How far (m) a contact point may be from the ball's surface and still count
+## as a real touch. Jolt also reports speculative contacts up to 2 cm away,
+## which must not trigger switches (e.g. through the shooter lane wall).
+const TOUCH_TOLERANCE := 0.001
 
 @export var tuning: PhysicsTuning
 
 var _shape_node: CollisionShape3D
 var _mesh_node: MeshInstance3D
+## Instance ids of parts the ball is touching right now.
+var _touching := {}
+## Parts touched for the first time in the last physics step.
+var _new_hits: Array[Object] = []
 
 
 func _init() -> void:
@@ -34,14 +42,39 @@ func _ready() -> void:
 		tuning = PhysicsTuning.new()
 	apply_tuning()
 	add_to_group("balls")
-	body_entered.connect(_on_body_entered)
 
 
-## Tells a table part that the ball hit it. Parts opt in by implementing
-## `on_ball_hit(ball: Ball)`.
-func _on_body_entered(body: Node) -> void:
-	if body.has_method("on_ball_hit"):
-		body.call("on_ball_hit", self)
+## Finds parts that the ball really touches (not just speculative contacts)
+## and remembers the ones it starts touching in this step.
+func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
+	var radius := tuning.scaled_ball_radius() if tuning else 0.0135
+	var center := state.transform.origin
+	var touching_now := {}
+	for i in state.get_contact_count():
+		var collider := state.get_contact_collider_object(i)
+		if collider == null or not collider.has_method("on_ball_hit"):
+			continue
+		var point := state.get_contact_collider_position(i)
+		if point.distance_to(center) > radius + TOUCH_TOLERANCE:
+			continue
+		var id := collider.get_instance_id()
+		touching_now[id] = true
+		if not _touching.has(id):
+			_new_hits.append(collider)
+	_touching = touching_now
+
+
+## Tells table parts that the ball hit them. Parts opt in by implementing
+## `on_ball_hit(ball: Ball)`. Runs at the start of the next physics tick, so
+## parts can safely change the ball's velocity.
+func _physics_process(_delta: float) -> void:
+	if _new_hits.is_empty():
+		return
+	var hits := _new_hits
+	_new_hits = []
+	for part in hits:
+		if is_instance_valid(part):
+			part.call("on_ball_hit", self)
 
 
 func apply_tuning() -> void:
@@ -82,6 +115,8 @@ func speed() -> float:
 
 ## Teleports the ball to a transform and stops it.
 func reset_to(target: Transform3D) -> void:
+	_touching.clear()
+	_new_hits.clear()
 	global_transform = target
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
