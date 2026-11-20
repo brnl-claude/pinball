@@ -5,9 +5,27 @@ A 3D pinball game with realistic physics and graphics, built with [Godot 4](http
 ## Getting started
 
 1. Install **Godot 4.7.2** (standard build, not .NET). On Fedora you can use Flathub (`org.godotengine.Godot`) or unpack the binary from godotengine.org.
-2. Open `project.godot` in the editor and press F5.
+2. Open `project.godot` in the editor and press F5, or start the game without the editor (below).
 
-From the command line:
+### Running from the command line
+
+Run these from the repository folder. Without the editor, the editor's debugger keys (F7–F12) do not apply.
+
+```sh
+# Godot from Flathub
+flatpak run org.godotengine.Godot --path .
+
+# Godot binary from godotengine.org (adjust the file name)
+~/Applications/Godot_v4.7.2-stable_linux.x86_64 --path .
+
+# Useful flags: full screen, or a fixed window size to try an aspect ratio
+flatpak run org.godotengine.Godot --path . --fullscreen
+flatpak run org.godotengine.Godot --path . --resolution 1080x1920
+```
+
+Each CI run also uploads a ready-made Linux build (`pinball-linux`, under the run's Artifacts on GitHub). Unzip it and start `./pinball.x86_64`; no Godot install needed.
+
+Tests (`godot` stands for either command above):
 
 ```sh
 godot --path . main.tscn                                       # play
